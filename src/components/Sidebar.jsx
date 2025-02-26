@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
 import Logo from "../assets/images/logo.png";
@@ -26,12 +25,7 @@ const Sidebar = ({ isOpen, setIsOpen, role }) => {
   const [isVehicleDropdownOpen, setVehicleDropdownOpen] = useState(false);
 
   const sb_menuItems = [
-    {
-      path: "/vehicle",
-      icon: Truck,
-      label: "Vehicle",
-      hasDropdown: true,
-    },
+    { path: "/vehicle", icon: Truck, label: "Vehicle", hasDropdown: true },
     { path: "/driver", icon: Users, label: "Driver" },
     { path: "/routeDetail", icon: Users, label: "Route" },
     { path: "/warehouse", icon: Warehouse, label: "Warehouse" },
@@ -44,16 +38,8 @@ const Sidebar = ({ isOpen, setIsOpen, role }) => {
   ];
 
   const dropdownItems = [
-    {
-      path: "vehicle/OverviewTab",
-      label: "Overview",
-      icon: SquareChartGantt,
-    },
-    {
-      path: "vehicle/VehiclesTab",
-      label: "Vehicles",
-      icon: Car,
-    },
+    { path: "vehicle/OverviewTab", label: "Overview", icon: SquareChartGantt },
+    { path: "vehicle/VehiclesTab", label: "Vehicles", icon: Car },
     { path: "vehicle/IncidentTab", label: "Incident", icon: DiamondPlus },
   ];
 
@@ -63,7 +49,7 @@ const Sidebar = ({ isOpen, setIsOpen, role }) => {
           (item) =>
             item.path === "/UserReceiver" ||
             item.path === "/showTrackingUser" ||
-            item.path === "/routeDetail",
+            item.path === "/routeDetail"
         )
       : role === "ADMIN"
         ? sb_menuItems.filter(
@@ -74,15 +60,13 @@ const Sidebar = ({ isOpen, setIsOpen, role }) => {
               item.path === "/analytics" ||
               item.path === "/indexNotification" ||
               item.path === "/route" ||
-              item.path === "/shipment",
+              item.path === "/shipment"
           )
         : sb_menuItems;
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
-    if (isVehicleDropdownOpen) {
-      setVehicleDropdownOpen(!isVehicleDropdownOpen);
-    }
+    if (isVehicleDropdownOpen) setVehicleDropdownOpen(false);
   };
 
   const toggleVehicleDropdown = () => {
@@ -91,41 +75,44 @@ const Sidebar = ({ isOpen, setIsOpen, role }) => {
 
   return (
     <aside
-      className={`dark:bg-box-dark mx-3 my-3 rounded-md bg-black transition-all duration-300 ease-linear ${
-        isOpen ? "w-60" : "w-16"
+      className={`bg-gradient-to-b from-gray-900 to-black mx-3 my-3 rounded-xl shadow-lg transition-all duration-500 ease-in-out ${
+        isOpen ? "w-64" : "w-16"
       } sticky left-0 top-0`}
     >
-      <div className="flex flex-col items-center p-1">
+      {/* Logo Section */}
+      <div className="flex flex-col items-center p-2">
         <NavLink
           to="/dashboard"
-          className={`flex items-center ${isOpen ? "px-4" : "justify-center"} py-4`}
+          className={`flex items-center ${isOpen ? "px-4" : "justify-center"} py-4 transition-all duration-300`}
         >
           <img
             src={Logo}
             alt="Logo"
-            className={`transition-all duration-300 ${isOpen ? "h-9 w-12" : "h-6 w-8"}`}
+            className={`transition-transform duration-300 ${isOpen ? "h-10 w-14 scale-110" : "h-6 w-8"}`}
           />
           <div
             className={`overflow-hidden transition-all duration-300 ${
-              isOpen ? "ml-2 w-auto opacity-100" : "w-0 opacity-0"
+              isOpen ? "ml-3 w-auto opacity-100" : "w-0 opacity-0"
             }`}
           >
-            <p className="whitespace-nowrap text-xl font-bold text-white">
-              VMS
-            </p>
+            <p className="whitespace-nowrap text-2xl font-bold text-white tracking-wide">VMS</p>
           </div>
         </NavLink>
       </div>
 
       {/* Menu Toggle Button */}
-      <div className="p-1">
+      <div className="p-2">
         <button
           onClick={toggleSidebar}
-          className={`flex items-center ${
-            isOpen ? "px-2" : "justify-center"
-          } w-full border-b border-gray-800 py-1 text-sm text-gray-300 transition-all duration-200 ease-in-out hover:bg-gray-800 hover:text-white`}
+          className={`group flex items-center ${
+            isOpen ? "px-3" : "justify-center"
+          } w-full py-2 text-sm text-gray-300 rounded-lg hover:bg-gray-800 transition-all duration-300`}
         >
-          <Menu className={`h-6 w-6 ${isOpen ? "mr-2" : ""} text-gray-400`} />
+          <Menu
+            className={`h-6 w-6 text-gray-400 transition-transform duration-300 ${
+              isOpen ? "mr-3 rotate-90" : "rotate-0"
+            } group-hover:text-white`}
+          />
           <span
             className={`overflow-hidden font-medium transition-all duration-300 ${
               isOpen ? "w-auto opacity-100" : "w-0 opacity-0"
@@ -136,11 +123,11 @@ const Sidebar = ({ isOpen, setIsOpen, role }) => {
         </button>
       </div>
 
+      {/* Navigation */}
       <nav className="flex-grow overflow-y-auto">
         <ul className="py-2 text-white">
           {filteredMenuItems.map((item) => {
             const Icon = item.icon;
-
             const isActive = location.pathname === item.path;
 
             if (item.hasDropdown) {
@@ -149,18 +136,16 @@ const Sidebar = ({ isOpen, setIsOpen, role }) => {
                   <Link
                     to="/vehicle"
                     onClick={toggleVehicleDropdown}
-                    className={`flex items-center hover:bg-gray-800 ${
-                      isOpen
-                        ? "px-4 py-3"
-                        : "justify-center px-6 py-3 focus:bg-blue-800"
-                    } text-sm transition-all duration-200 ease-out ${
-                      isActive
-                        ? "text-white"
-                        : "text-gray-300 hover:text-white focus:bg-blue-800"
+                    className={`flex items-center ${
+                      isOpen ? "px-4 py-3" : "justify-center py-3"
+                    } text-sm rounded-lg transition-all duration-300 group hover:bg-gray-700 hover:scale-105 ${
+                      isActive ? "bg-blue-600 text-white" : "text-gray-300"
                     }`}
                   >
                     <Icon
-                      className={`h-5 w-5 ${isOpen ? "mr-3" : ""} ${
+                      className={`h-5 w-5 ${
+                        isOpen ? "mr-3" : ""
+                      } transition-transform duration-300 group-hover:scale-110 ${
                         isActive ? "text-white" : "text-gray-400"
                       }`}
                     />
@@ -173,22 +158,22 @@ const Sidebar = ({ isOpen, setIsOpen, role }) => {
                     </span>
                   </Link>
 
+                  {/* Dropdown */}
                   <ul
-                    className={`transform overflow-hidden pl-12 transition-all duration-500 ease-in-out ${
+                    className={`pl-12 overflow-hidden transition-all duration-500 ease-in-out ${
                       isVehicleDropdownOpen
-                        ? "max-h-96 scale-100 opacity-100"
-                        : "max-h-0 scale-95 opacity-0"
+                        ? "max-h-96 opacity-100 translate-y-0"
+                        : "max-h-0 opacity-0 -translate-y-2"
                     }`}
                   >
                     {dropdownItems.map((dropdownItem) => {
-                      const DropdownIcon = dropdownItem.icon; // Lấy icon từ dropdownItem
+                      const DropdownIcon = dropdownItem.icon;
                       return (
-                        <li
-                          key={dropdownItem.path}
-                          className="flex items-center"
-                        >
+                        <li key={dropdownItem.path} className="flex items-center">
                           <DropdownIcon
-                            className={`h-5 w-5 text-gray-500 ${isOpen ? "mr-3" : ""} ${
+                            className={`h-5 w-5 text-gray-500 ${
+                              isOpen ? "mr-3" : ""
+                            } transition-transform duration-300 group-hover:scale-110 ${
                               location.pathname === dropdownItem.path
                                 ? "text-white"
                                 : "text-gray-400"
@@ -196,10 +181,10 @@ const Sidebar = ({ isOpen, setIsOpen, role }) => {
                           />
                           <Link
                             to={dropdownItem.path}
-                            className={`block py-2 text-sm font-medium text-gray-500 hover:text-white ${
+                            className={`block py-2 text-sm font-medium rounded-lg transition-all duration-300 group hover:bg-gray-700 hover:text-white ${
                               location.pathname === dropdownItem.path
-                                ? "bg-blue-800 text-white"
-                                : "focus:text-white"
+                                ? "bg-blue-600 text-white"
+                                : "text-gray-500"
                             }`}
                           >
                             {dropdownItem.label}
@@ -218,15 +203,15 @@ const Sidebar = ({ isOpen, setIsOpen, role }) => {
                 to={item.path}
                 className={`flex items-center ${
                   isOpen ? "px-4 py-3" : "justify-center py-3"
-                } text-sm transition-all duration-200 ease-out ${
-                  isActive
-                    ? "bg-blue-800 text-white"
-                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                } text-sm rounded-lg transition-all duration-300 group hover:bg-gray-700 hover:scale-105 ${
+                  isActive ? "bg-blue-600 text-white" : "text-gray-300"
                 }`}
                 title={!isOpen ? item.label : ""}
               >
                 <Icon
-                  className={`h-5 w-5 ${isOpen ? "mr-3" : ""} ${
+                  className={`h-5 w-5 ${
+                    isOpen ? "mr-3" : ""
+                  } transition-transform duration-300 group-hover:scale-110 ${
                     isActive ? "text-white" : "text-gray-400"
                   }`}
                 />
@@ -247,12 +232,14 @@ const Sidebar = ({ isOpen, setIsOpen, role }) => {
       <div className="border-t border-gray-800">
         <button
           className={`flex w-full items-center ${
-            isOpen ? "px-4" : "justify-center"
-          } py-3 text-sm text-gray-300 transition-colors duration-200 hover:bg-gray-800 hover:text-white`}
+            isOpen ? "px-4 py-3" : "justify-center py-3"
+          } text-sm text-gray-300 rounded-lg transition-all duration-300 group hover:bg-gray-700 hover:scale-105`}
           title={!isOpen ? "Settings" : ""}
         >
           <Settings
-            className={`h-5 w-5 ${isOpen ? "mr-3" : ""} text-gray-400`}
+            className={`h-5 w-5 ${
+              isOpen ? "mr-3" : ""
+            } transition-transform duration-300 group-hover:scale-110 text-gray-400 group-hover:text-white`}
           />
           <span
             className={`overflow-hidden font-medium transition-all duration-300 ${

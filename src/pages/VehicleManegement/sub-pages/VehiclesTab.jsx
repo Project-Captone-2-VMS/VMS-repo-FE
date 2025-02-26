@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, ChevronDown, Edit, Trash2, Filter } from 'lucide-react';
+import { Search, ChevronDown, Edit, Trash2, Filter } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Table, TableRow } from "../../../components/Vehicle/Table";
@@ -20,7 +20,7 @@ import Swal from "sweetalert2";
 import Pagination from "../../../components/Pagination";
 import EditVehicleModal from "../../../components/Modals/EditVehicleModal";
 import useVehicleSearchFilter from "../../../components/Vehicle/useVehicleSearchFilter";
-import AddVehicleModal from "../../../components/Modals/AddVehicleModal"; // Import AddVehicleModal
+import AddVehicleModal from "../../../components/Modals/AddVehicleModal";
 
 const VehiclesTable = ({
   vehicles,
@@ -34,32 +34,43 @@ const VehiclesTable = ({
   const displayedVehicles = vehicles.slice(startIndex, endIndex);
 
   const renderTableRow = (vehicle, index) => (
-    <TableRow key={vehicle.vehicleId}>
-      <div className="my-auto border-r p-3 text-sm">
+    <TableRow
+      key={vehicle.vehicleId}
+      className={`transition-all duration-300 hover:bg-gray-50 hover:scale-[1.01] group ${
+        index % 2 === 0 ? "bg-white" : "bg-gray-100/50"
+      }`}
+    >
+      <div className="my-auto border-r p-3 text-sm font-medium text-gray-700">
         {startIndex + index + 1}
       </div>
-      <div className="my-auto border-r p-3 text-sm">{vehicle.licensePlate}</div>
-      <div className="my-auto border-r p-3 text-sm">{vehicle.type}</div>
+      <div className="my-auto border-r p-3 text-sm font-medium text-gray-700">
+        {vehicle.licensePlate}
+      </div>
+      <div className="my-auto border-r p-3 text-sm font-medium text-gray-700">
+        {vehicle.type}
+      </div>
       <div
-        className={`my-auto mr-2 rounded-lg border-r py-2 text-center ${
+        className={`my-auto border-r py-2 px-4 text-center rounded-lg transition-colors duration-200 ${
           !vehicle.status
-            ? "bg-green-100 text-green-800"
-            : "bg-red-100 text-red-800"
+            ? "bg-green-100 text-green-800 group-hover:bg-green-200"
+            : "bg-red-100 text-red-800 group-hover:bg-red-200"
         }`}
       >
-        <p className="text-sm">
+        <p className="text-sm font-semibold">
           {vehicle.status ? "Busy (On Delivery)" : "Active (Available)"}
         </p>
       </div>
-      <div className="my-auto border-r p-3 text-sm">{vehicle.capacity}</div>
-      <div className="my-auto border-r p-3 text-sm">
+      <div className="my-auto border-r p-3 text-sm font-medium text-gray-700">
+        {vehicle.capacity}
+      </div>
+      <div className="my-auto border-r p-3 text-sm font-medium text-gray-700">
         {formatDate(vehicle.maintenanceSchedule)}
       </div>
-
       <div className="mx-auto my-auto flex gap-2">
         <Button
           variant="outline"
           size="icon"
+          className="border-gray-300 hover:bg-blue-100 hover:text-blue-600 transition-all duration-200"
           onClick={() => onEdit(vehicle.vehicleId)}
         >
           <Edit className="h-4 w-4" />
@@ -67,6 +78,7 @@ const VehiclesTable = ({
         <Button
           variant="destructive"
           size="icon"
+          className="bg-red-500 hover:bg-red-600 transition-all duration-200"
           onClick={() => onDelete(vehicle.vehicleId)}
         >
           <Trash2 className="h-4 w-4" />
@@ -86,6 +98,7 @@ const VehiclesTable = ({
         "Maintenance Schedule",
         "Actions",
       ]}
+      className="rounded-xl shadow-md bg-white/90 backdrop-blur-md"
     >
       {displayedVehicles.map(renderTableRow)}
     </Table>
@@ -100,7 +113,7 @@ const VehiclesTab = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [showAddModal, setShowAddModal] = useState(false); // Add state for add modal
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const itemsPerPage = 5;
 
@@ -117,7 +130,6 @@ const VehiclesTab = () => {
         setLoading(false);
       }
     };
-
     fetchVehicles();
   }, []);
 
@@ -134,10 +146,9 @@ const VehiclesTab = () => {
         prevVehicles.map((vehicle) =>
           vehicle.vehicleId === vehicleId
             ? { ...vehicle, ...vehicleWithoutId }
-            : vehicle,
-        ),
+            : vehicle
+        )
       );
-
       Swal.fire({
         title: "Success!",
         text: "Vehicle updated successfully!",
@@ -171,16 +182,15 @@ const VehiclesTab = () => {
       try {
         await deleteVehicle(vehicleId);
         setVehicles((prevVehicles) =>
-          prevVehicles.filter((vehicle) => vehicle.vehicleId !== vehicleId),
+          prevVehicles.filter((vehicle) => vehicle.vehicleId !== vehicleId)
         );
-
         Swal.fire("Deleted!", "Your vehicle has been deleted.", "success");
       } catch (error) {
         console.error("Error deleting vehicle:", error);
         Swal.fire(
           "Error!",
           "An error occurred while deleting the vehicle.",
-          "error",
+          "error"
         );
       }
     }
@@ -193,35 +203,44 @@ const VehiclesTab = () => {
   const filteredVehicles = useVehicleSearchFilter(
     vehicles,
     searchTerm,
-    statusFilter,
+    statusFilter
   );
 
   const totalItems = filteredVehicles.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   if (loading) {
-    return <div>Loading vehicles...</div>;
+    return (
+      <div className="flex justify-center items-center h-64 text-gray-500 animate-pulse">
+        Loading vehicles...
+      </div>
+    );
   }
 
   if (error) {
-    return <div>{error}</div>;
+    return (
+      <div className="text-center text-red-500 p-4 bg-red-50 rounded-lg">
+        {error}
+      </div>
+    );
   }
 
   return (
-    <div>
-      <div className="mb-6 flex items-center gap-4 rounded-lg bg-white p-4 shadow-sm">
+    <div className="p-6 bg-gradient-to-b from-gray-50 to-white min-h-screen">
+      {/* Search and Filter Section */}
+      <div className="mb-6 flex items-center gap-4 bg-white/90 backdrop-blur-md p-4 rounded-xl shadow-md">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 transition-colors duration-200" />
           <Input
-            placeholder="Search..."
-            className="border-0 bg-white pl-10 ring-1 ring-gray-200"
+            placeholder="Search vehicles..."
+            className="pl-10 py-6 bg-white border-0 ring-1 ring-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all duration-300"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <Button
           variant="outline"
-          className="flex h-10 items-center gap-2 border-0 bg-white px-4 ring-1 ring-gray-200"
+          className="h-10 px-4 bg-white ring-1 ring-gray-200 hover:bg-blue-50 hover:text-blue-600 transition-all duration-300 flex items-center gap-2 rounded-lg"
           onClick={() =>
             setStatusFilter(statusFilter === "active" ? "busy" : "active")
           }
@@ -231,52 +250,58 @@ const VehiclesTab = () => {
         </Button>
       </div>
 
-      <Card>
-        <div className="space-y-1.5 px-6 pt-5">
-          <p className="text-lg font-semibold leading-none tracking-tight">
+      {/* Card Section */}
+      <Card className="bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-gray-100">
+        <CardHeader className="px-6 pt-6">
+          <CardTitle className="text-2xl font-bold text-gray-800">
             Vehicles History
-          </p>
-        </div>
-        <CardContent>
-          {/* Show No Vehicles Found if no filtered vehicles */}
-          {filteredVehicles.length === 0 && (
-            <div className="text-center text-gray-500">No vehicles found</div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          {filteredVehicles.length === 0 ? (
+            <div className="text-center text-gray-500 py-6 animate-fade-in">
+              No vehicles found
+            </div>
+          ) : (
+            <>
+              <VehiclesTable
+                vehicles={filteredVehicles}
+                currentPage={currentPage}
+                itemsPerPage={itemsPerPage}
+                onEdit={handleEdit}
+                onDelete={handleDeleteVehicle}
+              />
+              <div className="mt-6">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={totalItems}
+                  onPageChange={setCurrentPage}
+                  className="transition-all duration-300"
+                />
+              </div>
+            </>
           )}
-
-          <VehiclesTable
-            vehicles={filteredVehicles}
-            currentPage={currentPage}
-            itemsPerPage={itemsPerPage}
-            onEdit={handleEdit}
-            onDelete={handleDeleteVehicle}
-          />
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            itemsPerPage={itemsPerPage}
-            totalItems={totalItems}
-            onPageChange={setCurrentPage}
-          />
         </CardContent>
-
-        {editingVehicle && (
-          <EditVehicleModal
-            vehicle={editingVehicle}
-            onClose={handleCloseModal}
-            onSave={handleSaveVehicle}
-          />
-        )}
-        {showAddModal && (
-          <AddVehicleModal 
-            isOpen={showAddModal}
-            onClose={() => setShowAddModal(false)}
-            existingVehicles={vehicles}
-          />
-        )} {/* Add AddVehicleModal */}
       </Card>
+
+      {editingVehicle && (
+        <EditVehicleModal
+          vehicle={editingVehicle}
+          onClose={handleCloseModal}
+          onSave={handleSaveVehicle}
+        />
+      )}
+      {showAddModal && (
+        <AddVehicleModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          existingVehicles={vehicles}
+        />
+      )}
     </div>
   );
 };
 
-export default VehiclesTab;
-
+export default VehiclesTab; 
