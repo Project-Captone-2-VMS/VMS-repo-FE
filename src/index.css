@@ -85,4 +85,36 @@
 }
 .animate-fade-in {
   animation: fadeIn 0.5s ease-in-out;
+  animation: fadeIn 0.5s ease-out forwards;
+}
+.swal-custom-popup {
+  border-radius: 16px;
+  font-family: 'Inter', sans-serif;
+  padding: 2rem;
+  border: none;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+}
+
+.swal-custom-title {
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: #1e293b;
+}
+
+.swal-custom-confirm-button {
+  background-color: #4f46e5 !important;
+  border-radius: 9999px !important;
+  padding: 0.75rem 1.5rem !important;
+  font-weight: 600 !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3) !important;
+}
+
+.swal-custom-cancel-button {
+  background-color: #f3f4f6 !important;
+  color: #4b5563 !important;
+  border-radius: 9999px !important;
+  padding: 0.75rem 1.5rem !important;
+  font-weight: 600 !important;
+  transition: all 0.3s ease !important;
 }

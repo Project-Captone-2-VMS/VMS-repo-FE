@@ -13,6 +13,12 @@ import {
   Settings,
   Menu,
   BellRing,
+  X,
+  Trash2,
+  Check,
+  AlertTriangle,
+  Info,
+  MessageSquare
 } from "lucide-react";
 import User from "../../assets/images/user.png";
 import SockJS from "sockjs-client";
@@ -162,6 +168,27 @@ const Header = ({ sidebarOpen, setSidebarOpen }) => {
     setSelectedNotification(null);
   };
 
+  // Function to get notification icon based on type
+  const getNotificationIcon = (notice) => {
+    const type = notice.notification?.type || "SYSTEM";
+    switch (type) {
+      case "USER":
+        return <MessageSquare className="h-6 w-6 text-blue-500" />;
+      case "ALERT":
+        return <AlertTriangle className="h-6 w-6 text-amber-500" />;
+      case "SYSTEM":
+      default:
+        return <Info className="h-6 w-6 text-indigo-500" />;
+    }
+  };
+
+  // Function to get notification time
+  const getNotificationTime = (notice) => {
+    const createdAt = notice.createdAt || new Date().toISOString();
+    const date = new Date(createdAt);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
   return (
     <motion.header 
       initial={{ y: -100 }}
@@ -195,7 +222,13 @@ const Header = ({ sidebarOpen, setSidebarOpen }) => {
               onClick={toggleNotifications}
               className="relative group flex items-center p-2 rounded-full hover:bg-blue-50 transition-all duration-300"
             >
-              <Bell className="h-6 w-6 text-gray-600 group-hover:text-blue-600" />
+              <motion.div
+                animate={hasNewNotification ? { rotate: [0, 10, -10, 10, -10, 0] } : {}}
+                transition={{ repeat: hasNewNotification ? Infinity : 0, repeatDelay: 5, duration: 0.5 }}
+              >
+                <Bell className="h-6 w-6 text-gray-600 group-hover:text-blue-600" />
+              </motion.div>
+              
               {notificationCount > 0 && (
                 <motion.span
                   initial={{ scale: 0 }}
@@ -220,41 +253,80 @@ const Header = ({ sidebarOpen, setSidebarOpen }) => {
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute right-0 mt-3 w-96 max-h-96 overflow-y-auto bg-white/90 backdrop-blur-md rounded-xl shadow-xl border border-gray-100"
+                  className="absolute right-0 mt-3 w-96 max-h-96 overflow-hidden bg-white/90 backdrop-blur-md rounded-xl shadow-xl border border-gray-100 z-50"
                 >
-                  <div className="sticky top-0 bg-white/80 backdrop-blur-md px-4 py-3 border-b border-gray-200 rounded-t-xl">
-                    <h2 className="text-xl font-semibold text-gray-800">Notifications</h2>
-                    {userRole === "USER" && (
-                      <button
-                        onClick={deleteAllNotifications}
-                        className="absolute right-4 top-3 text-sm text-gray-600 hover:text-red-600 transition-colors duration-200"
+                  <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-indigo-600 px-4 py-3 border-b border-gray-200 rounded-t-xl">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <BellRing className="h-5 w-5 text-white" />
+                        <h2 className="text-xl font-semibold text-white">Notifications</h2>
+                      </div>
+                      {userRole === "USER" && notifications.length > 0 && (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={deleteAllNotifications}
+                          className="flex items-center gap-1 text-sm text-white hover:text-red-200 transition-colors duration-200 bg-red-500/20 rounded-full px-3 py-1"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span>Clear all</span>
+                        </motion.button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="overflow-y-auto max-h-80 scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-blue-100">
+                    {notifications.length > 0 ? (
+                      <ul className="p-3 space-y-2">
+                        {notifications.map((notice) => (
+                          <motion.li
+                            key={notice.id}
+                            initial={{ x: -20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            whileHover={{ 
+                              scale: 1.02,
+                              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)"
+                            }}
+                            className="group relative p-3 rounded-lg bg-white hover:bg-blue-50 shadow-sm cursor-pointer transition-all duration-300 border-l-4 border-blue-500"
+                            onClick={() => handleNotificationClick(notice)}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="p-2 rounded-full bg-blue-100">
+                                {getNotificationIcon(notice)}
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex justify-between items-start">
+                                  <p className="text-sm font-semibold text-gray-800 group-hover:text-blue-700 transition-colors">
+                                    {notice.notification?.title || "No Title"}
+                                  </p>
+                                  <span className="text-xs text-gray-500">
+                                    {getNotificationTime(notice)}
+                                  </span>
+                                </div>
+                                <p className="mt-1 text-sm text-gray-600 group-hover:text-gray-700 line-clamp-2">
+                                  {notice.notification?.content || "No Content"}
+                                </p>
+                              </div>
+                            </div>
+                          </motion.li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex flex-col items-center justify-center p-8 text-center"
                       >
-                        Clear all
-                      </button>
+                        <Bell className="h-12 w-12 text-gray-300 mb-3" />
+                        <p className="text-sm text-gray-500">You have no new notifications.</p>
+                        <p className="text-xs text-gray-400 mt-1">Any new activity will appear here.</p>
+                      </motion.div>
                     )}
                   </div>
-                  <ul className="p-3 space-y-2">
-                    {notifications.length > 0 ? (
-                      notifications.map((notice) => (
-                        <li
-                          key={notice.id}
-                          className="group p-3 rounded-lg bg-white hover:bg-gray-100 shadow-sm cursor-pointer transition-all duration-300 hover:scale-105"
-                          onClick={() => handleNotificationClick(notice)}
-                        >
-                          <p className="text-sm font-semibold text-gray-800">
-                            {notice.notification?.title || "No Title"}
-                          </p>
-                          <p className="mt-1 text-sm text-gray-600 truncate">
-                            {notice.notification?.content || "No Content"}
-                          </p>
-                        </li>
-                      ))
-                    ) : (
-                      <div className="p-4 text-center text-sm text-gray-500">
-                        You have no new notifications.
-                      </div>
-                    )}
-                  </ul>
+                  
+                  <div className="sticky bottom-0 bg-gradient-to-t from-white via-white to-transparent py-2 px-4 text-center text-xs text-gray-500">
+                    Click on a notification to view details
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -333,40 +405,77 @@ const Header = ({ sidebarOpen, setSidebarOpen }) => {
         </div>
       </div>
 
-      {/* Notification Popup */}
+      {/* Notification Detail Popup */}
       <AnimatePresence>
         {selectedNotification && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
+            onClick={handleClosePopUp}
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="w-1/3 bg-white rounded-xl shadow-2xl p-6"
+              onClick={(e) => e.stopPropagation()}
+              className="w-1/3 bg-white rounded-xl shadow-2xl overflow-hidden"
             >
-              <h3 className="text-xl font-semibold text-gray-800">
-                {selectedNotification.notification.title}
-              </h3>
-              <p className="mt-2 text-sm text-gray-600">
-                {selectedNotification.notification.content}
-              </p>
-              <div className="mt-4 flex justify-end gap-2">
-                <button
-                  onClick={handleClosePopUp}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={() => DeleteItemNotice(selectedNotification.id)}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200"
-                >
-                  Delete
-                </button>
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 text-white">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {getNotificationIcon(selectedNotification)}
+                    <h3 className="text-xl font-semibold">
+                      {selectedNotification.notification.title || "Notification"}
+                    </h3>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.1, rotate: 90 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={handleClosePopUp}
+                    className="rounded-full p-1 hover:bg-white/20 transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                  </motion.button>
+                </div>
+              </div>
+              
+              <div className="p-6">
+                <div className="bg-blue-50 rounded-lg p-4 mb-4">
+                  <p className="text-gray-700">
+                    {selectedNotification.notification.content}
+                  </p>
+                </div>
+                
+                <div className="flex justify-end gap-2">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleClosePopUp}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all duration-200 flex items-center gap-2"
+                  >
+                    <X className="h-4 w-4" />
+                    Close
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => DeleteItemNotice(selectedNotification.id)}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 flex items-center gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center gap-2"
+                  >
+                    <Check className="h-4 w-4" />
+                    Mark as Read
+                  </motion.button>
+                </div>
               </div>
             </motion.div>
           </motion.div>

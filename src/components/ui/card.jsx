@@ -1,7 +1,5 @@
-
 import * as React from "react";
 import { cn } from "../../lib/utils";
-
 
 const Card = React.forwardRef(({ className, ...props }, ref) => (
   <div
@@ -18,7 +16,6 @@ Card.displayName = "Card";
 const CardHeader = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
-
     className={cn("flex flex-col space-y-1.5 px-6 py-5", className)}
     {...props}
   />
@@ -42,5 +39,10 @@ const CardContent = React.forwardRef(({ className, ...props }, ref) => (
 ));
 CardContent.displayName = "CardContent";
 
-export { Card, CardHeader, CardTitle, CardContent };
+// Thêm CardFooter vào đây
+const CardFooter = React.forwardRef(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("px-5 py-3 border-t", className)} {...props} />
+));
+CardFooter.displayName = "CardFooter";
 
+export { Card, CardHeader, CardTitle, CardContent, CardFooter };
