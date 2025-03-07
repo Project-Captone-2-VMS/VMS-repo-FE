@@ -122,15 +122,21 @@ const WarehouseProduct = () => {
       setIsAddProductOpen(false);
       await fetchWarehouseData(warehouseId);
       await fetchProducts(warehouseId);
-      Swal.fire({
+      
+      await Swal.fire({
         icon: "success",
         title: "Success!",
         text: "Product added successfully.",
-        customClass: {
-          popup: 'swal-custom-popup',
-          title: 'swal-custom-title',
-          confirmButton: 'swal-custom-confirm-button',
+        timer: 1500,
+        showConfirmButton: false,
+        background: "#fff",
+        iconColor: "#4ade80",
+        showClass: {
+          popup: `animate__animated animate__fadeInUp animate__faster`
         },
+        hideClass: {
+          popup: `animate__animated animate__fadeOutDown animate__faster`
+        }
       });
     } catch (error) {
       console.error("Error adding product:", error);
@@ -138,11 +144,14 @@ const WarehouseProduct = () => {
         icon: "error",
         title: "Error!",
         text: "Failed to add product.",
-        customClass: {
-          popup: 'swal-custom-popup',
-          title: 'swal-custom-title',
-          confirmButton: 'swal-custom-confirm-button',
+        background: "#fff",
+        iconColor: "#ef4444",
+        showClass: {
+          popup: `animate__animated animate__fadeInUp animate__faster`
         },
+        hideClass: {
+          popup: `animate__animated animate__fadeOutDown animate__faster`
+        }
       });
     }
   };
@@ -167,24 +176,47 @@ const WarehouseProduct = () => {
     }
   };
 
-  const handleUpdateProduct = (updatedProduct) => {
+  const handleUpdateProduct = async (updatedProduct) => {
     setIsEditProductOpen(false);
     setEditingProduct(null);
-    Promise.all([
-      fetchWarehouseData(warehouseId),
-      fetchProducts(warehouseId)
-    ]).then(() => {
-      Swal.fire({
+    
+    try {
+      await Promise.all([
+        fetchWarehouseData(warehouseId),
+        fetchProducts(warehouseId)
+      ]);
+
+      await Swal.fire({
         icon: "success",
         title: "Success!",
         text: "Product updated successfully.",
-        customClass: {
-          popup: 'swal-custom-popup',
-          title: 'swal-custom-title',
-          confirmButton: 'swal-custom-confirm-button',
+        timer: 1500,
+        showConfirmButton: false,
+        background: "#fff",
+        iconColor: "#4ade80",
+        showClass: {
+          popup: `animate__animated animate__fadeInUp animate__faster`
         },
+        hideClass: {
+          popup: `animate__animated animate__fadeOutDown animate__faster`
+        }
       });
-    });
+    } catch (error) {
+      console.error("Error updating product:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error!",
+        text: "Failed to update product.",
+        background: "#fff",
+        iconColor: "#ef4444",
+        showClass: {
+          popup: `animate__animated animate__fadeInUp animate__faster`
+        },
+        hideClass: {
+          popup: `animate__animated animate__fadeOutDown animate__faster`
+        }
+      });
+    }
   };
 
   const handleDeleteProduct = async (productId) => {
@@ -195,12 +227,17 @@ const WarehouseProduct = () => {
       showCancelButton: true,
       confirmButtonText: "Yes, delete it!",
       cancelButtonText: "No, cancel!",
-      customClass: {
-        popup: 'swal-custom-popup',
-        title: 'swal-custom-title',
-        confirmButton: 'swal-custom-confirm-button',
-        cancelButton: 'swal-custom-cancel-button',
+      background: "#fff",
+      iconColor: "#eab308",
+      buttonsStyling: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#64748b",
+      showClass: {
+        popup: `animate__animated animate__fadeInUp animate__faster`
       },
+      hideClass: {
+        popup: `animate__animated animate__fadeOutDown animate__faster`
+      }
     });
 
     if (confirmResult.isConfirmed) {
@@ -208,15 +245,21 @@ const WarehouseProduct = () => {
         await deleteProduct(productId);
         await fetchWarehouseData(warehouseId);
         await fetchProducts(warehouseId);
-        Swal.fire({
+        
+        await Swal.fire({
           icon: "success",
           title: "Success!",
           text: "Product deleted successfully.",
-          customClass: {
-            popup: 'swal-custom-popup',
-            title: 'swal-custom-title',
-            confirmButton: 'swal-custom-confirm-button',
+          timer: 1500,
+          showConfirmButton: false,
+          background: "#fff",
+          iconColor: "#4ade80",
+          showClass: {
+            popup: `animate__animated animate__fadeInUp animate__faster`
           },
+          hideClass: {
+            popup: `animate__animated animate__fadeOutDown animate__faster`
+          }
         });
       } catch (error) {
         console.error("Error deleting product:", error);
@@ -224,11 +267,14 @@ const WarehouseProduct = () => {
           icon: "error",
           title: "Error!",
           text: "Failed to delete the product.",
-          customClass: {
-            popup: 'swal-custom-popup',
-            title: 'swal-custom-title',
-            confirmButton: 'swal-custom-confirm-button',
+          background: "#fff",
+          iconColor: "#ef4444",
+          showClass: {
+            popup: `animate__animated animate__fadeInUp animate__faster`
           },
+          hideClass: {
+            popup: `animate__animated animate__fadeOutDown animate__faster`
+          }
         });
       }
     }

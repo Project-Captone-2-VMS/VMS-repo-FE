@@ -54,10 +54,12 @@ const DriverManagement = () => {
         setDrivers(data);
       } else {
         console.error("Unexpected data format:", data);
-        Swal.fire({
+        await Swal.fire({
           icon: "error",
           title: "Error",
           text: "Received unexpected data format from server",
+          confirmButtonText: "OK",
+          confirmButtonColor: '#3E64FF',
           customClass: {
             popup: 'animated-modal'
           }
@@ -65,10 +67,12 @@ const DriverManagement = () => {
       }
     } catch (error) {
       console.error("Error fetching drivers:", error);
-      Swal.fire({
+      await Swal.fire({
         icon: "error",
         title: "Error",
         text: error.response?.data?.message || "Failed to fetch drivers",
+        confirmButtonText: "OK",
+        confirmButtonColor: '#3E64FF',
         customClass: {
           popup: 'animated-modal'
         }
@@ -117,20 +121,24 @@ const DriverManagement = () => {
       try {
         await deleteDriver(driver.driverId);
         await fetchDrivers();
-        Swal.fire({
+        await Swal.fire({
           title: "Deleted!",
           text: "The driver has been deleted.",
           icon: "success",
+          confirmButtonText: "OK",
+          confirmButtonColor: '#3E64FF',
           customClass: {
             popup: 'animated-modal'
           }
         });
       } catch (error) {
         console.error("Error deleting driver:", error);
-        Swal.fire({
+        await Swal.fire({
           title: "Error!",
           text: "Failed to delete the driver.",
           icon: "error",
+          confirmButtonText: "OK",
+          confirmButtonColor: '#3E64FF',
           customClass: {
             popup: 'animated-modal'
           }
@@ -145,21 +153,32 @@ const DriverManagement = () => {
   };
 
   const handleCloseUpdateModal = () => {
+    console.log("Closing update modal...");
     setIsUpdateModalOpen(false);
-    setSelectedDriver(null);
   };
-
+  
   const handleDriverUpdated = async () => {
-    await fetchDrivers(); // Refresh the drivers list
-    Swal.fire({
+    setIsUpdateModalOpen(false);  // Close modal first
+    await fetchDrivers();  // Refresh data
+  
+    await Swal.fire({
+      icon: "success",
       title: "Success!",
       text: "Driver updated successfully.",
-      icon: "success",
-      customClass: {
-        popup: 'animated-modal'
+      timer: 1500,
+      showConfirmButton: false,
+      background: "#fff",
+      iconColor: "#4ade80",
+      showClass: {
+        popup: `animate__animated animate__fadeInUp animate__faster`
+      },
+      hideClass: {
+        popup: `animate__animated animate__fadeOutDown animate__faster`
       }
     });
   };
+  
+  
 
   const handleRefresh = () => {
     setRefreshKey(oldKey => oldKey + 1);

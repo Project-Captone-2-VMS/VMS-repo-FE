@@ -18,6 +18,7 @@ import {
   Car,
   Wrench,
   DiamondPlus,
+  Calendar // Add this import
 } from "lucide-react";
 
 const Sidebar = ({ isOpen, setIsOpen, role }) => {
@@ -35,6 +36,8 @@ const Sidebar = ({ isOpen, setIsOpen, role }) => {
     { path: "/shipment", icon: FileText, label: "Shipment" },
     { path: "/RealtimeTrackingUser", icon: Map, label: "Realtime Tracking" },
     { path: "/showTrackingUser", icon: ChartSpline, label: "Show Tracking" },
+    { path: "/schedule", icon: Calendar, label: "Schedule" }, // Add this new menu item
+    { path: "/scheduleAdmin", icon: Calendar, label: "Schedule" }, // Add this new menu item
   ];
 
   const dropdownItems = [
@@ -49,7 +52,8 @@ const Sidebar = ({ isOpen, setIsOpen, role }) => {
           (item) =>
             item.path === "/UserReceiver" ||
             item.path === "/showTrackingUser" ||
-            item.path === "/routeDetail"
+            item.path === "/routeDetail" ||
+            item.path === "/schedule"  
         )
       : role === "ADMIN"
         ? sb_menuItems.filter(
@@ -60,7 +64,8 @@ const Sidebar = ({ isOpen, setIsOpen, role }) => {
               item.path === "/analytics" ||
               item.path === "/indexNotification" ||
               item.path === "/route" ||
-              item.path === "/shipment"
+              item.path === "/shipment" ||
+              item.path === "/scheduleAdmin"  
           )
         : sb_menuItems;
 

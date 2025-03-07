@@ -136,6 +136,9 @@ const Route = () => {
   const [customOrigin, setCustomOrigin] = useState('');
   const [customDestination, setCustomDestination] = useState('');
 
+  const [routeDate, setRouteDate] = useState('');
+  const [routeTime, setRouteTime] = useState('');
+
   const convertGeocode = async (lat, lng) => {
     try {
       const response = await axios.get(
@@ -393,12 +396,49 @@ const Route = () => {
   //   }
   // };
 
+  const validateDateTime = () => {
+    const now = new Date();
+    const selectedDateTime = new Date(`${routeDate}T${routeTime}`);
+    
+    if (selectedDateTime < now) {
+      setError("Route date and time must be in the future");
+      return false;
+    }
+    return true;
+  };
+
+  const resetForm = () => {
+    setOrigin('');
+    setDestination('');
+    setSelectedDriver('');
+    setSelectedVehicle('');
+    setRouteDate('');
+    setRouteTime('');
+    setTextareaValue('');
+    setSelectedCoordinates([]);
+  };
+
+  // Add validation to handleFindSequence
   const handleFindSequence = async () => {
+    if (!validateDateTime()) {
+      return;
+    }
     if (selectedCoordinates.length < 2) {
       setError("Please select at least two points.");
       return;
     }
 
+    if (!routeDate || !routeTime) {
+      setError("Please select both date and time for the route.");
+      return;
+    }
+    const formatDate = (dateString) => {
+      const date = new Date(dateString);
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      return `${year}-${month}-${day}`;
+    };
     try {
       const originCoords = await geocode(origin);
       const destinationCoords = await geocode(destination);
@@ -408,6 +448,9 @@ const Route = () => {
         .map((coord) => `${coord.lat},${coord.lng}`)
         .join(",");
 
+      // Create combined date-time string
+      const routeDateTime = new Date(`${routeDate}T${routeTime}`);
+
       const formData = {
         startLat: originCoords.lat,
         startLng: originCoords.lng,
@@ -416,6 +459,8 @@ const Route = () => {
         endLng: destinationCoords.lng,
         driverId: selectedDriver,
         vehicleId: selectedVehicle,
+        startDate: formatDate(routeDate),
+        startTime: `${routeTime}:00`,
       };
 
       const headers = {
@@ -451,6 +496,7 @@ const Route = () => {
           window.location.reload();
         });
       }
+      resetForm();
     } catch (error) {
       if (error.response && error.response.data) {
         setError(`Error: ${error.response.data.message}`);
@@ -607,6 +653,31 @@ const Route = () => {
                 </label>
               </div>
 
+              <div className="mb-4 px-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  Route Date:
+                  <Input 
+                    type="date"
+                    value={routeDate}
+                    onChange={(e) => setRouteDate(e.target.value)}
+                    className="mt-1 block w-full rounded-md border border-gray-300"
+                    min={new Date().toISOString().split('T')[0]} // Set minimum date to today
+                  />
+                </label>
+              </div>
+
+              <div className="mb-4 px-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  Route Time:
+                  <Input 
+                    type="time"
+                    value={routeTime}
+                    onChange={(e) => setRouteTime(e.target.value)}
+                    className="mt-1 block w-full rounded-md border border-gray-300"
+                  />
+                </label>
+              </div>
+
               <div
                 className="w-full"
                 style={{ width: "100%", padding: "10px" }}
@@ -669,6 +740,8 @@ const Route = () => {
               <th scope="col" className="px-6 py-3">
                 License Plate
               </th>
+              <th scope="col" className="px-6 py-3">Date</th>
+              <th scope="col" className="px-6 py-3">Time</th>
               <th scope="col" className="px-6 py-3">
                 Action
               </th>
@@ -689,6 +762,12 @@ const Route = () => {
                   {route.driver.lastName}{" "}
                 </td>
                 <td className="px-6 py-4">{route.vehicle.licensePlate}</td>
+                <td className="px-6 py-4">
+                  {new Date(route.routeDate).toLocaleDateString()}
+                </td>
+                <td className="px-6 py-4">
+                  {route.startTime}
+                </td>
                 <td className="px-2 py-4">
                   <Button
                     type="link"

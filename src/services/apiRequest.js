@@ -253,8 +253,13 @@ export const deleteWarehouse = async (warehouseId) => {
   return response.data;
 };
 export const getAllWarehouses = async () => {
-  const response = await api.get("warehouse/all");
-  return response.data;
+  try {
+    const response = await api.get('/warehouse/all');
+    return response.data;
+  } catch (error) {
+    console.error('Error details:', error.response?.data);
+    throw error;
+  }
 };
 export const createProduct = async (productDTO) => {
   const response = await api.post("product/add", productDTO);
@@ -520,10 +525,19 @@ export const getAlRouteByUsername = async (username) => {
 
 
 export const getAllRoute = async () => {
-  const response = await api.get(`route/all`);
-  return response.data;
+  try {
+    const token = localStorage.getItem('jwtToken');
+    const response = await axios.get(`${API_BASE_URL}/route/list-route-no-active`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching routes:', error);
+    throw error;
+  }
 };
-
 export const getUserUsername = async (username) => {
   const response = await api.get(`driver/getInfo/${username}`);
   return response.data;

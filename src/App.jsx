@@ -1,4 +1,3 @@
-
 import {createBrowserRouter,RouterProvider,Navigate, Routes, Route} from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -25,12 +24,11 @@ import ExpenseManagement from "./pages/ExpenseManagement";
 import AdminSender from "./pages/SendNotification/AdminSender";
 import UserReceiver from "./pages/SendNotification/UserReceiver";
 import RouteDetailUser from "./pages/RouteDetailUser";
-import RealtimeTrackingUser from "./pages/RealtimeTrackingUser/RealtimeTrackingUser";
 import ShowTrackingUser from "./pages/RealtimeTrackingUser/ShowTrackingUser";
 import ShipmentManage from "./pages/Shipment/ShipmentManage";
 import { Toaster } from "react-hot-toast";
 import ChangePassWord from "./pages/ChangePassWord";
-
+import Schedule from "./pages/Schedule"; // Add this import at the top
 
 function App() {
   const router = createBrowserRouter([
@@ -84,6 +82,10 @@ function App() {
             {
               path: "routeDetail",
               element: <RouteDetailUser />,
+            },
+            {
+              path: "schedule",
+              element: <Schedule />,
             },
           ],
         },
@@ -180,6 +182,10 @@ function App() {
                 },
               ],
             },
+            {
+              path: "scheduleAdmin",
+              element: <Schedule />,
+            },
           ],
         },
       ],
@@ -195,15 +201,3 @@ function App() {
 }
 
 export default App;
-// import React from 'react';
-// import VehicleManagement from './page/VehicleManagement';
-
-// const App = () => {
-//   return (
-//     <div>
-//       <VehicleManagement />
-//     </div>
-//   );
-// };
-
-// export default App;
