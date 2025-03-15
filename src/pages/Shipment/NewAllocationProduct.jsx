@@ -18,9 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getAllWarehouses, getAllProducts, listRouteNoActive, createShipment, saveItem } from "../../services/apiRequest";
+import { getAllWarehouses, getAllProducts, listRouteNoActive, createShipmentItem } from "../../services/apiRequest";
 import toast from "react-hot-toast";
-import axios from 'axios';
 import { useNavigate } from "react-router-dom";
 const apiKey = import.meta.env.VITE_HERE_MAP_API_KEY;
 
@@ -33,8 +32,6 @@ const AllocationProduct = () => {
   const [routes, setRoutes] = useState([]); 
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [alertMessage, setAlertMessage] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -82,7 +79,6 @@ const AllocationProduct = () => {
     }
   };
 
-
   const fetchProducts = async (warehouseId) => {
     try {
       setLoading(true); 
@@ -111,7 +107,6 @@ const AllocationProduct = () => {
       const product = products.find(
         (prod) => prod.productId.toString() === allocation.productId
       );
-      
       if (product && parseInt(value) > product.quantity) {
         toast.error(`Quantity exceeds available stock (${product.quantity})`);
         return;
@@ -153,78 +148,33 @@ const AllocationProduct = () => {
     return hasWarehouse && hasRoute && hasValidAllocations;
   };
 
-  const validateAllocationData = (data) => {
-    const errors = {};
-    
-    if (!data.selectedWarehouse) {
-      errors.warehouse = "Warehouse selection is required";
-    }
-    
-    if (!data.selectedRoute) {
-      errors.route = "Route selection is required";
-    }
-    
-    if (!data.allocations || data.allocations.length === 0) {
-      errors.allocations = "At least one product allocation is required";
-    } else {
-      data.allocations.forEach((allocation, index) => {
-        if (!allocation.productId) {
-          errors[`allocation${index}`] = "Product selection is required";
-        }
-        if (!allocation.quantity || allocation.quantity <= 0) {
-          errors[`quantity${index}`] = "Valid quantity is required";
-        }
-        if (!allocation.price || allocation.price <= 0) {
-          errors[`price${index}`] = "Valid price is required";
-        }
-      });
-    }
-  
-    return errors;
-  };
-  
   const handleSubmitAllocation = async () => {
     try {
       setIsSubmitting(true);
       
-      // Find selected route details
-      const selectedRouteData = routes.find(route => route.routeId.toString() === selectedRoute);
-      
-      // Create shipment with locations
-      const shipmentData = {
-        status: false,
-        warehouse: { warehouseId: parseInt(selectedWarehouse) },
-        route: { routeId: parseInt(selectedRoute) },
-      };
-  
-      console.log('Submitting shipment data:', shipmentData);
-      
-      const createdShipment = await createShipment(shipmentData);
-  
-      // Create items
+      // Vì đã gộp shipment và item nên chỉ gọi createShipmentItem
       const itemPromises = allocations.map(allocation => {
         const itemRequest = {
-          itemName: allocation.productName,
+          shipmentItemName: allocation.productName,
           price: parseFloat(allocation.price),
           quantity: parseInt(allocation.quantity),
           warehouse: { warehouseId: parseInt(selectedWarehouse) },
-          shipment: { shipmentId: createdShipment.shipmentId },
+          route: { routeId: parseInt(selectedRoute) }
         };
-        return saveItem(itemRequest);
+        return createShipmentItem(itemRequest);
       });
   
       await Promise.all(itemPromises);
-      toast.success("Shipment and items created successfully");
+      toast.success("Shipment item(s) created successfully");
       navigate('/shipment');
     } catch (error) {
       console.error('Submit error:', error);
-      toast.error("Failed to create shipment");
+      toast.error("Failed to create shipment item(s)");
     } finally {
       setIsSubmitting(false);
     }
   };
   
-
   const renderAvailableProducts = () => (
     <Table>
       <TableHeader>
@@ -246,7 +196,6 @@ const AllocationProduct = () => {
     </Table>
   );
 
-  // Add navigation handler
   const handleCancel = () => {
     navigate('/shipment');
   };
@@ -270,9 +219,7 @@ const AllocationProduct = () => {
                   <CardContent className="space-y-6">
                     <div className="space-y-4">
                       <div className="space-y-3">
-                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                          Warehouse
-                        </label>
+                        <label className="text-sm font-medium">Warehouse</label>
                         <Select 
                           onValueChange={setSelectedWarehouse}
                           disabled={loading}
@@ -285,7 +232,6 @@ const AllocationProduct = () => {
                               <SelectItem 
                                 key={warehouse.warehouseId} 
                                 value={warehouse.warehouseId.toString()}
-                                className="p-2"
                               >
                                 <div className="flex items-center space-x-2">
                                   <span>🏡 {warehouse.warehouseName} - {warehouse.location} </span>
@@ -297,27 +243,21 @@ const AllocationProduct = () => {
                       </div>
 
                       <div className="space-y-3 pt-2">
-                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                          Route
-                        </label>
+                        <label className="text-sm font-medium">Route</label>
                         <Select 
                           onValueChange={setSelectedRoute}
                           disabled={loading}
                         >
-                          <SelectTrigger className="w-full min-h-[80px] h-auto whitespace-normal text-left flex items-start p-4">
+                          <SelectTrigger className="w-full min-h-[80px] h-auto p-4">
                             <SelectValue placeholder="Select Route">
                               {selectedRoute && routes.find(r => r.routeId.toString() === selectedRoute) && (
                                 <div className="flex flex-col space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <span className="font-medium">
-                                      Route {selectedRoute}
-                                    </span>
+                                  <div className="font-medium">Route {selectedRoute}</div>
+                                  <div className="text-gray-600 truncate">
+                                    🚗: {routes.find(r => r.routeId.toString() === selectedRoute)?.startLocationName}
                                   </div>
-                                  <div className="text-wrap text-gray-600 truncate">
-                                   🚗: {routes.find(r => r.routeId.toString() === selectedRoute)?.startLocationName}
-                                  </div>
-                                  <div className="text-wrap text-gray-600 truncate">
-                                  🎯: {routes.find(r => r.routeId.toString() === selectedRoute)?.endLocationName}
+                                  <div className="text-gray-600 truncate">
+                                    🎯: {routes.find(r => r.routeId.toString() === selectedRoute)?.endLocationName}
                                   </div>
                                 </div>
                               )}
@@ -328,10 +268,9 @@ const AllocationProduct = () => {
                               <SelectItem 
                                 key={route.routeId} 
                                 value={route.routeId.toString()}
-                                className="p-4 hover:bg-gray-50 border-b last:border-b-0"
                               >
                                 <div className="flex flex-col space-y-4">
-                                  <div className="flex items-center justify-between">
+                                  <div className="flex justify-between">
                                     <span className="font-medium">Route {route.routeId}</span>
                                     <span className={`px-2 py-1 text-xs rounded-full ${
                                       route.status === 'active' 
@@ -341,37 +280,34 @@ const AllocationProduct = () => {
                                       {route.status}
                                     </span>
                                   </div>
-
                                   <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
                                     <div className="flex items-center space-x-2">
-                                      <User className="h-4 w-4 flex-shrink-0" />
-                                      <span className="truncate">
+                                      <User className="h-4 w-4" />
+                                      <span>
                                         {route.driver?.firstName} {route.driver?.lastName}
                                       </span>
                                     </div>
                                     <div className="flex items-center space-x-2">
-                                      <Truck className="h-4 w-4 flex-shrink-0" />
-                                      <span className="truncate">{route.vehicle?.licensePlate}</span>
+                                      <Truck className="h-4 w-4" />
+                                      <span>{route.vehicle?.licensePlate || "N/A"}</span>
                                     </div>
                                   </div>
-
                                   <div className="space-y-3 border-t pt-3">
                                     <div className="flex items-start space-x-2">
-                                      <MapPin className="h-4 w-4 text-green-500 flex-shrink-0 mt-1" />
+                                      <MapPin className="h-4 w-4 text-green-500" />
                                       <span className="text-sm">
                                         From: {route.startLocationName || 'Unknown'}
                                       </span>
                                     </div>
                                     <div className="flex items-start space-x-2">
-                                      <MapPin className="h-4 w-4 text-red-500 flex-shrink-0 mt-1" />
+                                      <MapPin className="h-4 w-4 text-red-500" />
                                       <span className="text-sm">
                                         To: {route.endLocationName || 'Unknown'}
                                       </span>
                                     </div>
                                   </div>
-
                                   <div className="flex items-center text-sm text-gray-600 pt-2 border-t">
-                                    <Clock className="h-4 w-4 mr-2 flex-shrink-0" />
+                                    <Clock className="h-4 w-4 mr-2" />
                                     <span>{formatTime(route.totalTime)}</span>
                                   </div>
                                 </div>
@@ -462,11 +398,7 @@ const AllocationProduct = () => {
               </Card>
 
               <div className="mt-6 flex justify-end gap-4">
-                <Button
-                  variant="outline"
-                  onClick={handleCancel}
-                  className="w-[150px]"
-                >
+                <Button variant="outline" onClick={handleCancel} className="w-[150px]">
                   Cancel
                 </Button>
                 <Button 

@@ -6,35 +6,35 @@ import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import ShipmentTable from './ShipmentTable';
 import { useNavigate } from "react-router-dom";
-import { getAllShipments, deleteShipment } from "../../services/apiRequest";
+import { getAllShipmentItems, deleteShipmentItem } from "../../services/apiRequest";
 import toast from 'react-hot-toast';
 import Swal from "sweetalert2";
 
 export default function ShipmentManage() {
   const navigate = useNavigate();
-  const [shipments, setShipments] = useState([]);
+  const [shipmentItems, setShipmentItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    fetchShipments();
+    fetchShipmentItems();
   }, []);
 
-  const fetchShipments = async () => {
+  const fetchShipmentItems = async () => {
     try {
       setLoading(true);
-      const data = await getAllShipments();
-      // console.log("data",data)
-      setShipments(data);
+      const data = await getAllShipmentItems();
+      setShipmentItems(data);
     } catch (error) {
-      console.log('Failed to fetch shipments:', error);
-      toast.error('Failed to fetch shipments');
+      console.log('Failed to fetch shipment items:', error);
+      toast.error('Failed to fetch shipment items');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (shipmentId) => {
+  // Update the handleDelete function
+  const handleDelete = async (routeId) => {
     const result = await Swal.fire({
       title: 'Are you sure?',
       text: "You won't be able to revert this!",
@@ -46,12 +46,20 @@ export default function ShipmentManage() {
 
     if (result.isConfirmed) {
       try {
-        await deleteShipment(shipmentId);
-        await fetchShipments();
-        toast.success('Shipment deleted successfully');
+        const data = await getAllShipmentItems();
+        const itemsToDelete = data.filter(item => item.route?.routeId === routeId);
+        
+        // Delete all items associated with the route
+        for (const item of itemsToDelete) {
+          await deleteShipmentItem(item.shipmentItemId);
+        }
+        
+        toast.success('Shipment items deleted successfully');
+        // Refresh the shipment items data after deletion
+        fetchShipmentItems();
       } catch (error) {
-        console.error('Failed to delete shipment:', error);
-        toast.error('Failed to delete shipment');
+        console.error('Failed to delete shipment items:', error);
+        toast.error('Failed to delete shipment items');
       }
     }
   };
@@ -73,7 +81,7 @@ export default function ShipmentManage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Search shipments..."
+              placeholder="Search shipment items..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -88,7 +96,7 @@ export default function ShipmentManage() {
             <div className="text-center py-4">Loading...</div>
           ) : (
             <ShipmentTable
-              shipments={shipments}
+              shipmentItems={shipmentItems}
               onDelete={handleDelete}
             />
           )}

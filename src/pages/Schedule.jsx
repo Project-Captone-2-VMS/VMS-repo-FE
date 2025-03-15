@@ -285,7 +285,7 @@ const Schedule = () => {
                   <div>
                     <p className="text-sm text-gray-600 mb-1 font-semibold">Departure Time</p>
                     <p className="font-medium text-gray-800">
-                      {dayjs(selectedRoute.routeTime, 'HH:mm:ss').format('HH:mm')}
+                      {dayjs(selectedRoute.startTime, 'HH:mm:ss').format('HH:mm')}
                     </p>
                   </div>
                 </div>

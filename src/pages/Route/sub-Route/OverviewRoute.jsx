@@ -19,19 +19,17 @@ import Pagination from "@/components/Pagination";
 const { Option } = Select;
 
 const Route = () => {
+  // Các state không thay đổi, giữ nguyên như mã gốc
   const [routes, setRoutes] = useState([]);
+  const [selectedRouteDetails, setSelectedRouteDetails] = useState(null);
   const [wayPoints, setWayPoints] = useState([]);
   const [interconnect, setInterconnect] = useState([]);
-  const [selectedRouteDetails, setSelectedRouteDetails] = useState(null);
-
-  const [editData, setEditData] = useState(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const [formDriver, setFormDriver] = useState([]);
   const [formVehicle, setFormVehicle] = useState([]);
   const [selectedDriver, setSelectedDriver] = useState("");
   const [selectedVehicle, setSelectedVehicle] = useState("");
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
-
   const [formDataSendNotification, setFormDataSendNotification] = useState({
     title: "You have a new route",
     content: "Please check your route and estimate the time",
@@ -43,79 +41,15 @@ const Route = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 3;
-
-  // Add filtered and paginated routes logic
   const filteredRoutes = routes;
   const totalPages = Math.ceil(filteredRoutes.length / itemsPerPage);
   const paginatedRoutes = filteredRoutes.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const driverResult = await getDriverNoActive();
-        setFormDriver(driverResult);
-
-        const vehicleResult = await getVehicleNoActive();
-        setFormVehicle(vehicleResult);
-
-        const listRoute = await listRouteNoActive();
-        // const routeIds = listRoute.map((route) => route.routeId);
-
-        setRoutes(listRoute);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-
-    fetchData();
-  }, [getDriverNoActive, getVehicleNoActive]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  const handleEditChange = (e) => {
-    const { name, value } = e.target;
-    setEditData({ ...editData, [name]: value });
-  };
-
-  const handleViewDetails = async (id) => {
-    const res = await getWayPoint(id);
-    setWayPoints(res);
-
-    const response = await getInterConnections(id);
-    setInterconnect(response);
-
-    setIsDetailModalVisible(true);
-  }
-
-  const handleEdit = (route) => {
-    setEditData(route);
-    setIsModalVisible(true);
-  };
-
-  const handleSave = () => {
-    setRoutes((prevRoutes) =>
-      prevRoutes.map((route) =>
-        route.id === editData.id ? { ...editData } : route,
-      ),
-    );
-    setIsModalVisible(false);
-  };
-
-  function formatTime(seconds) {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `About ${hours}h ${minutes}m`;
-  }
 
   const mapRef = useRef(null);
   const [map, setMap] = useState(null);
@@ -123,59 +57,54 @@ const Route = () => {
   const [error, setError] = useState(null);
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
-  const [routeInfo, setRouteInfo] = useState({ distance: "", duration: "" });
-  const [suggestions, setSuggestions] = useState([]);
-  const routePolylines = useRef([]);
-  const markers = useRef([]);
+  const [routeDate, setRouteDate] = useState("");
+  const [routeTime, setRouteTime] = useState("");
   const [textareaValue, setTextareaValue] = useState("");
   const [selectedCoordinates, setSelectedCoordinates] = useState([]);
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
+
   const token = localStorage.getItem("jwtToken");
   const apiKey = import.meta.env.VITE_HERE_MAP_API_KEY;
 
   const [warehouseLocations, setWarehouseLocations] = useState([]);
-  const [customOrigin, setCustomOrigin] = useState('');
-  const [customDestination, setCustomDestination] = useState('');
+  const [customOrigin, setCustomOrigin] = useState("");
+  const [customDestination, setCustomDestination] = useState("");
 
-  const [routeDate, setRouteDate] = useState('');
-  const [routeTime, setRouteTime] = useState('');
+  const routePolylines = useRef([]);
+  const markers = useRef([]);
 
-  const convertGeocode = async (lat, lng) => {
-    try {
-      const response = await axios.get(
-        "https://revgeocode.search.hereapi.com/v1/revgeocode",
-        {
-          params: {
-            at: `${lat},${lng}`,
-            lang: "en-US",
-            apiKey: apiKey,
-          },
-        },
-      );
+  function convertM(distance) {
+    return `${(distance / 1000).toFixed(1)} km`;
+  }
 
-      if (
-        response.data &&
-        response.data.items &&
-        response.data.items.length > 0
-      ) {
-        const addr = response.data.items[0].address;
+  function formatTime(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `About ${hours}h ${minutes}m`;
+  }
 
-        return {
-          street: addr.street || "",
-          houseNumber: addr.houseNumber || "",
-          district: addr.district || "",
-          city: addr.city || "",
-          state: addr.state || "",
-          country: addr.countryName || "",
-          postalCode: addr.postalCode || "",
-          label: response.data.items[0].title || "",
-        };
-      } else {
-        return null;
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const driverResult = await getDriverNoActive();
+        setFormDriver(driverResult);
+        const vehicleResult = await getVehicleNoActive();
+        setFormVehicle(vehicleResult);
+        const listRoute = await listRouteNoActive();
+        setRoutes(listRoute);
+      } catch (error) {
+        console.error("Error fetching data:", error);
       }
-    } catch (error) {
-      console.error("Reverse geocoding error:", error);
-      return null;
-    }
+    };
+    fetchData();
+  }, []);
+
+  const handleViewDetails = async (id) => {
+    const res = await getWayPoint(id);
+    setWayPoints(res);
+    const response = await getInterConnections(id);
+    setInterconnect(response);
+    setIsDetailModalVisible(true);
   };
 
   useEffect(() => {
@@ -188,42 +117,27 @@ const Route = () => {
         center: { lat: 16.0583, lng: 108.2210 },
         zoom: 14,
         pixelRatio: window.devicePixelRatio || 1,
-      },
+      }
     );
 
-    const behavior = new H.mapevents.Behavior(
-      new H.mapevents.MapEvents(mapInstance),
-    );
+    new H.mapevents.Behavior(new H.mapevents.MapEvents(mapInstance));
     H.ui.UI.createDefault(mapInstance, defaultLayers);
     setMap(mapInstance);
 
-    const setUpClickListener = (map) => {
-      map.addEventListener("tap", async function (evt) {
-        const coord = map.screenToGeo(
-          evt.currentPointer.viewportX,
-          evt.currentPointer.viewportY,
-        );
-        const clickedMarker = new H.map.Marker({
-          lat: coord.lat,
-          lng: coord.lng,
-        });
-        map.addObject(clickedMarker);
-        markers.current.push(clickedMarker);
+    mapInstance.addEventListener("tap", async function (evt) {
+      const coord = mapInstance.screenToGeo(
+        evt.currentPointer.viewportX,
+        evt.currentPointer.viewportY
+      );
+      const clickedMarker = new H.map.Marker({ lat: coord.lat, lng: coord.lng });
+      mapInstance.addObject(clickedMarker);
+      markers.current.push(clickedMarker);
 
-        // Gọi hàm convertGeocode để lấy địa chỉ
-        const address = await convertGeocode(coord.lat, coord.lng);
-
-        const addressText = address || "Địa chỉ không tìm thấy";
-        console.log(addressText)
-        setTextareaValue((prev) => prev + addressText.label + "\n");
-        setSelectedCoordinates((prev) => [
-          ...prev,
-          { lat: coord.lat, lng: coord.lng },
-        ]);
-      });
-    };
-
-    setUpClickListener(mapInstance);
+      const address = await convertGeocode(coord.lat, coord.lng);
+      const addressText = address ? address.label : "Địa chỉ không tìm thấy";
+      setTextareaValue((prev) => prev + addressText + "\n");
+      setSelectedCoordinates((prev) => [...prev, { lat: coord.lat, lng: coord.lng }]);
+    });
 
     return () => {
       mapInstance.dispose();
@@ -243,6 +157,39 @@ const Route = () => {
     fetchWarehouseLocations();
   }, []);
 
+  const convertGeocode = async (lat, lng) => {
+    try {
+      const response = await axios.get(
+        "https://revgeocode.search.hereapi.com/v1/revgeocode",
+        {
+          params: {
+            at: `${lat},${lng}`,
+            lang: "en-US",
+            apiKey: apiKey,
+          },
+        }
+      );
+      if (response.data && response.data.items && response.data.items.length > 0) {
+        const addr = response.data.items[0].address;
+        return {
+          street: addr.street || "",
+          houseNumber: addr.houseNumber || "",
+          district: addr.district || "",
+          city: addr.city || "",
+          state: addr.state || "",
+          country: addr.countryName || "",
+          postalCode: addr.postalCode || "",
+          label: response.data.items[0].title || "",
+        };
+      } else {
+        return null;
+      }
+    } catch (error) {
+      console.error("Reverse geocoding error:", error);
+      return null;
+    }
+  };
+
   const handleTextareaChange = (e) => {
     const value = e.target.value;
     setTextareaValue(value);
@@ -255,9 +202,7 @@ const Route = () => {
     const lines = value.split("\n").filter((line) => line.trim() !== "");
     const newCoordinates = [];
     lines.forEach((line) => {
-      const matches = line.match(
-        /([-+]?[0-9]*\.?[0-9]+),\s*([-+]?[0-9]*\.?[0-9]+)/,
-      );
+      const matches = line.match(/([-+]?[0-9]*\.?[0-9]+),\s*([-+]?[0-9]*\.?[0-9]+)/);
       if (matches) {
         const lat = parseFloat(matches[1]);
         const lng = parseFloat(matches[2]);
@@ -267,139 +212,107 @@ const Route = () => {
         newCoordinates.push({ lat, lng });
       }
     });
-    console.log(newCoordinates);
     setSelectedCoordinates(newCoordinates);
   };
 
   const geocode = async (address) => {
+    if (!address || !address.trim()) {
+      throw new Error("Invalid address. Please enter a valid address.");
+    }
     try {
-      const response = await axios.get(
-        "https://geocode.search.hereapi.com/v1/geocode",
-        {
-          params: {
-            q: address,
-            apikey: apiKey,
-          },
+      const response = await axios.get("https://geocode.search.hereapi.com/v1/geocode", {
+        params: {
+          q: address,
+          apikey: apiKey,
         },
-      );
-      if (response.data.items.length > 0) {
+      });
+      if (response.data.items && response.data.items.length > 0) {
         return response.data.items[0].position;
       } else {
         throw new Error("No location found");
       }
     } catch (error) {
-      console.error("Geocode error:", error.message);
+      console.error("Geocode error:", error.response ? error.response.data : error.message);
       throw error;
     }
   };
 
+  // Hàm fetchRoute sửa đổi để gọi trực tiếp HERE Maps API nếu backend không hỗ trợ
   const fetchRoute = async (originCoords, destinationCoords) => {
     setLoading(true);
+    setError(null);
     try {
-      routePolylines.current.forEach((polyline) => {
-        map.removeObject(polyline);
-      });
+      // Xóa các polyline và marker cũ
+      routePolylines.current.forEach((polyline) => map.removeObject(polyline));
       routePolylines.current = [];
-      markers.current.forEach((marker) => {
-        map.removeObject(marker);
-      });
+      markers.current.forEach((marker) => map.removeObject(marker));
       markers.current = [];
-      const response = await axios.get(
-        "http://localhost:8080/api/route/findRoute",
-        {
-          params: {
-            originLat: originCoords.lat,
-            originLng: originCoords.lng,
-            destinationLat: destinationCoords.lat,
-            destinationLng: destinationCoords.lng,
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+
+      // Gọi trực tiếp HERE Maps API để lấy 2 tuyến đường
+      const response = await axios.get("https://router.hereapi.com/v8/routes", {
+        params: {
+          origin: `${originCoords.lat},${originCoords.lng}`,
+          destination: `${destinationCoords.lat},${destinationCoords.lng}`,
+          transportMode: "car",
+          alternatives: 2, // Yêu cầu 1 tuyến thay thế (tổng cộng 2 tuyến)
+          return: "polyline,summary",
+          apikey: apiKey,
         },
-      );
+      });
+
+      console.log("HERE API Response:", response.data);
 
       if (response.data.routes && response.data.routes.length > 0) {
-        const route = response.data.routes[0];
-        const section = route.sections[0];
-        const polylineData = section.polyline;
-        const routeLine = H.geo.LineString.fromFlexiblePolyline(polylineData);
-        const outlinePolyline = new H.map.Polyline(routeLine, {
-          style: { strokeColor: "gray", lineWidth: 8 },
-        });
-        const routePolyline = new H.map.Polyline(routeLine, {
-          style: { strokeColor: "rgba(173, 216, 230, 0.8)", lineWidth: 5 },
-        });
+        const routesData = response.data.routes.slice(0, 3); // Lấy tối đa 2 tuyến
+        setRoutes(routesData);
 
-        map.addObject(outlinePolyline);
-        map.addObject(routePolyline);
-        routePolylines.current.push(outlinePolyline, routePolyline);
-
-        if (map) {
-          map
-            .getViewModel()
-            .setLookAtData({ bounds: routePolyline.getBoundingBox() });
+        // Tìm tuyến ngắn nhất
+        let minIndex = 0;
+        let minDistance = routesData[0].sections[0].summary.length;
+        for (let i = 1; i < routesData.length; i++) {
+          if (routesData[i].sections[0].summary.length < minDistance) {
+            minDistance = routesData[i].sections[0].summary.length;
+            minIndex = i;
+          }
         }
+        setSelectedRouteIndex(minIndex);
 
-        const distance = section.summary.length;
-        const duration = section.summary.duration;
+        // Vẽ các tuyến đường lên bản đồ
+        routesData.forEach((route, index) => {
+          const section = route.sections[0];
+          const polylineData = section.polyline; // Polyline từ HERE API
+          const routeLine = H.geo.LineString.fromFlexiblePolyline(polylineData);
+          const strokeColor = index === minIndex ? "red" : index === 0 ? "blue" : "green";
+          const routePolyline = new H.map.Polyline(routeLine, {
+            style: { strokeColor, lineWidth: 5 },
+          });
+          map.addObject(routePolyline);
+          routePolylines.current.push(routePolyline);
 
-        setRouteInfo({ distance, duration });
-
-        const originMarker = new H.map.Marker({
-          lat: originCoords.lat,
-          lng: originCoords.lng,
+          if (index === minIndex) {
+            map.getViewModel().setLookAtData({ bounds: routePolyline.getBoundingBox() });
+          }
         });
-        map.addObject(originMarker);
-        markers.current.push(originMarker);
 
-        const destinationMarker = new H.map.Marker({
-          lat: destinationCoords.lat,
-          lng: destinationCoords.lng,
-        });
-        map.addObject(destinationMarker);
-        markers.current.push(destinationMarker);
+        // Thêm marker cho điểm xuất phát và điểm đến
+        const originMarker = new H.map.Marker({ lat: originCoords.lat, lng: originCoords.lng });
+        const destinationMarker = new H.map.Marker({ lat: destinationCoords.lat, lng: destinationCoords.lng });
+        map.addObjects([originMarker, destinationMarker]);
+        markers.current.push(originMarker, destinationMarker);
       } else {
         setError("No routes found.");
       }
     } catch (error) {
-      console.log("Failed to fetch route:", error);
+      console.error("Failed to fetch route:", error);
       setError("Failed to fetch route. Please try again later.");
     } finally {
       setLoading(false);
     }
   };
 
-  // const fetchSuggestions = async (query) => {
-  //   if (!query) {
-  //     setSuggestions([]);
-  //     return;
-  //   }
-  //   try {
-  //     const response = await axios.get(
-  //       "http://localhost:8080/api/route/search-suggestions",
-  //       {
-  //         params: {
-  //           query,
-  //           lat: 52.5308,
-  //           lng: 13.3847,
-  //         },
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //       },
-  //     );
-  //     setSuggestions(response.data.items || []);
-  //   } catch (error) {
-  //     console.log("Failed to fetch suggestions:", error);
-  //     setSuggestions([]);
-  //   }
-  // };
-
   const validateDateTime = () => {
     const now = new Date();
     const selectedDateTime = new Date(`${routeDate}T${routeTime}`);
-    
     if (selectedDateTime < now) {
       setError("Route date and time must be in the future");
       return false;
@@ -408,26 +321,22 @@ const Route = () => {
   };
 
   const resetForm = () => {
-    setOrigin('');
-    setDestination('');
-    setSelectedDriver('');
-    setSelectedVehicle('');
-    setRouteDate('');
-    setRouteTime('');
-    setTextareaValue('');
+    setOrigin("");
+    setDestination("");
+    setSelectedDriver("");
+    setSelectedVehicle("");
+    setRouteDate("");
+    setRouteTime("");
+    setTextareaValue("");
     setSelectedCoordinates([]);
   };
 
-  // Add validation to handleFindSequence
   const handleFindSequence = async () => {
-    if (!validateDateTime()) {
-      return;
-    }
+    if (!validateDateTime()) return;
     if (selectedCoordinates.length < 2) {
       setError("Please select at least two points.");
       return;
     }
-
     if (!routeDate || !routeTime) {
       setError("Please select both date and time for the route.");
       return;
@@ -442,14 +351,7 @@ const Route = () => {
     try {
       const originCoords = await geocode(origin);
       const destinationCoords = await geocode(destination);
-      const intermediatePoints = selectedCoordinates;
-
-      const destinations = intermediatePoints
-        .map((coord) => `${coord.lat},${coord.lng}`)
-        .join(",");
-
-      // Create combined date-time string
-      const routeDateTime = new Date(`${routeDate}T${routeTime}`);
+      const destinations = selectedCoordinates.map((coord) => `${coord.lat},${coord.lng}`).join(",");
 
       const formData = {
         startLat: originCoords.lat,
@@ -464,18 +366,13 @@ const Route = () => {
       };
 
       const headers = {
-        Authorization: `Bearer eyJhbGciOiJSUzUxMiIsImN0eSI6IkpXVCIsImlzcyI6IkhFUkUiLCJhaWQiOiJZcDgxNk96UkI4M1BWTHM5UzZYZiIsImlhdCI6MTczMzI0MjA0MSwiZXhwIjoxNzMzMzI4NDQxLCJraWQiOiJqMSJ9.ZXlKaGJHY2lPaUprYVhJaUxDSmxFRVYzYUEuaWMwQWlmcUtIUHQ0WFZucS05X1JvYWkzU0ozTWxDbHBNYWtOZXJvdHRzU3VxQk9xRWRFYTh5aWZVMEpoYzBWcVdOa2VSUXAwZzhjVkxUSzVwemRVWkFvaEdyWFFkd2NNcGVqNVdubGd5U0h6YmtmQzlicEVnOWM1TWdsSEg4TjJrQVUzTjRPLTJQOFpUVjAwMkdVMGI4MndlTld5Zk9LeTlDb2l4QVJFdXlRLmJHX2F5Nk5MWFZidGs0UVdfRE1RRC1tNllDSE1yekVxU2dfVG1mM051c0k.AR1Lb6fw2fvHSONXgsHAbo_SIZ5OsXv4rrpNq98okB30JH_tG9oDasU5vLXOz1fjJDA4tuUCGUupTODkOU_pbg9TndIqgILOQARIkHibp8vtyubSjZUoiEWPFhQmRUMepuoU_m11OxUTavcet4EBynYaAU8o2_SpA8oSDBVUg6szJMfeQq6FSFKax4YQ-IEQaS9FakhfgPtRhqMFYjv66gwIB767o17s_Z2rkhI-D7qvpOi9m3NojlRO4X4wF_u7gLvTaBLlInG-6oKi3IneFdCf_vmeZSnVBo0nVKgGV67oLA7Wk880SwXblLViYhRjLI8yCnLLiIMcqEpRaIl_rQ`,
+        Authorization: `Bearer ${token}`, // Sử dụng token thực tế
       };
 
-      const results = await findSequence({
-        ...formData,
-        headers,
-      });
+      const results = await findSequence({ ...formData, headers });
       console.log("results", results);
 
-      const findUserNameByDriverId = await getUsernameByDriverId(
-        formData.driverId,
-      );
+      const findUserNameByDriverId = await getUsernameByDriverId(formData.driverId);
       console.log("findUserNameByDriverId", findUserNameByDriverId);
       if (stompClient !== null && stompClient.connected) {
         stompClient.disconnect(() => {
@@ -484,14 +381,13 @@ const Route = () => {
       } else {
         socket = new SockJS("http://localhost:8080/ws");
         stompClient = over(socket);
-
         stompClient.connect({}, () => {
           stompClient.send(
             `/app/chat/${findUserNameByDriverId}`,
             {},
-            JSON.stringify(formDataSendNotification),
-            toast.success("Successfully created!"),
+            JSON.stringify(formDataSendNotification)
           );
+          toast.success("Successfully created!");
           console.log("Notification Sent:", formDataSendNotification);
           window.location.reload();
         });
@@ -510,7 +406,6 @@ const Route = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
     try {
       const originCoords = await geocode(origin);
       const destinationCoords = await geocode(destination);
@@ -522,9 +417,19 @@ const Route = () => {
     }
   };
 
-  function convertM(distance) {
-    return `${(distance / 1000).toFixed(1)} km`;
-  }
+  useEffect(() => {
+    if (routes.length > 0 && routePolylines.current.length > 0) {
+      routePolylines.current.forEach((polyline, index) => {
+        polyline.setStyle({
+          strokeColor:
+            index.toString() === selectedRouteIndex.toString() ? "red" : index === 0 ? "blue" : "green",
+          lineWidth: 5,
+        });
+      });
+    }
+  }, [selectedRouteIndex, routes]);
+
+  // Phần JSX giữ nguyên như mã gốc
   return (
     <div>
       <div className="flex justify-between">
@@ -534,10 +439,7 @@ const Route = () => {
           style={{ width: "71%", height: "700px" }}
           ref={mapRef}
         ></div>
-        <div
-          className="gap-3 rounded-lg border bg-white px-3 py-2"
-          style={{ width: "28%" }}
-        >
+        <div className="gap-3 rounded-lg border bg-white px-3 py-2" style={{ width: "28%" }}>
           <div className="form-container">
             <h2 className="mb-4 text-2xl font-bold">Route on HERE Map</h2>
             <form onSubmit={handleSubmit} className="mb-4">
@@ -549,9 +451,8 @@ const Route = () => {
                     value={origin}
                     onChange={(value) => {
                       setOrigin(value);
-                      // Reset destination if it matches new origin
                       if (value === destination) {
-                        setDestination('');
+                        setDestination("");
                       }
                     }}
                     onSearch={(value) => setCustomOrigin(value)}
@@ -574,7 +475,6 @@ const Route = () => {
                   </Select>
                 </label>
               </div>
-
               <div className="mb-4 px-1">
                 <label className="block text-sm font-medium text-gray-700">
                   End:
@@ -589,13 +489,13 @@ const Route = () => {
                     placeholder="Select or enter end location"
                     filterOption={false}
                   >
-                    {warehouseLocations.filter(
-                      warehouse => warehouse.location !== origin
-                    ).map((warehouse) => (
-                      <Option key={warehouse.warehouseId} value={warehouse.location}>
-                        {warehouse.warehouseName} - {warehouse.location}
-                      </Option>
-                    ))}
+                    {warehouseLocations
+                      .filter((warehouse) => warehouse.location !== origin)
+                      .map((warehouse) => (
+                        <Option key={warehouse.warehouseId} value={warehouse.location}>
+                          {warehouse.warehouseName} - {warehouse.location}
+                        </Option>
+                      ))}
                     {customDestination && (
                       <Option key="custom" value={customDestination}>
                         {customDestination}
@@ -604,7 +504,6 @@ const Route = () => {
                   </Select>
                 </label>
               </div>
-
               <div className="mb-4 px-1">
                 <label className="block text-sm font-medium text-gray-700">
                   Driver:
@@ -628,7 +527,6 @@ const Route = () => {
                   </select>
                 </label>
               </div>
-
               <div className="mb-4 px-1">
                 <label className="block text-sm font-medium text-gray-700">
                   Select Vehicle:
@@ -647,29 +545,27 @@ const Route = () => {
                         </option>
                       ))
                     ) : (
-                      <option disabled>Loading drivers...</option>
+                      <option disabled>Loading vehicles...</option>
                     )}
                   </select>
                 </label>
               </div>
-
               <div className="mb-4 px-1">
                 <label className="block text-sm font-medium text-gray-700">
                   Route Date:
-                  <Input 
+                  <Input
                     type="date"
                     value={routeDate}
                     onChange={(e) => setRouteDate(e.target.value)}
                     className="mt-1 block w-full rounded-md border border-gray-300"
-                    min={new Date().toISOString().split('T')[0]} // Set minimum date to today
+                    min={new Date().toISOString().split("T")[0]}
                   />
                 </label>
               </div>
-
               <div className="mb-4 px-1">
                 <label className="block text-sm font-medium text-gray-700">
                   Route Time:
-                  <Input 
+                  <Input
                     type="time"
                     value={routeTime}
                     onChange={(e) => setRouteTime(e.target.value)}
@@ -677,14 +573,31 @@ const Route = () => {
                   />
                 </label>
               </div>
-
-              <div
-                className="w-full"
-                style={{ width: "100%", padding: "10px" }}
-              >
-                <h3 className="text-lg font-semibold">
-                  Coordinate Information
-                </h3>
+              {routes.length > 0 && (
+                <div className="mb-4 px-1">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Select Route:
+                    <select
+                      value={selectedRouteIndex}
+                      onChange={(e) => setSelectedRouteIndex(parseInt(e.target.value))}
+                      className="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-300"
+                    >
+                      {routes.map((route, index) => {
+                        const distance = route.sections?.[0]?.summary
+                          ? convertM(route.sections[0].summary.length)
+                          : "N/A";
+                        return (
+                          <option key={index} value={index}>
+                            Route {index + 1} - {distance}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </label>
+                </div>
+              )}
+              <div className="w-full" style={{ width: "100%", padding: "10px" }}>
+                <h3 className="text-lg font-semibold">Coordinate Information</h3>
                 <textarea
                   value={textareaValue}
                   onChange={handleTextareaChange}
@@ -708,7 +621,6 @@ const Route = () => {
                 </button>
               </div>
             </form>
-
             {loading && <p>Loading route...</p>}
             {error && <p className="text-red-600">{error}</p>}
           </div>
@@ -716,63 +628,34 @@ const Route = () => {
       </div>
 
       <div className="relative mt-2 overflow-x-auto bg-white p-4 shadow-md sm:rounded-lg">
-        <h2 className="mb-4 text-lg font-bold text-slate-950">
-          Information List Route
-        </h2>
-        <table className="w-full rounded-lg text-left text-sm font-normal text-black dark:text-black rtl:text-right">
-          <thead className="bg-gray-50 text-xs uppercase text-black dark:bg-gray-700 dark:text-gray-400">
+        <h2 className="mb-4 text-lg font-bold text-slate-950">Information List Route</h2>
+        <table className="w-full rounded-lg text-left text-sm font-normal text-black">
+          <thead className="bg-gray-50 text-xs uppercase text-black">
             <tr>
-              <th scope="col" className="px-6 py-3">
-                Start
-              </th>
-              <th scope="col" className="px-6 py-3">
-                End
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Time
-              </th>{" "}
-              <th scope="col" className="px-6 py-3">
-                Distance
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Fullname Driver
-              </th>
-              <th scope="col" className="px-6 py-3">
-                License Plate
-              </th>
+              <th scope="col" className="px-6 py-3">Start</th>
+              <th scope="col" className="px-6 py-3">End</th>
+              <th scope="col" className="px-6 py-3">Time</th>
+              <th scope="col" className="px-6 py-3">Distance</th>
+              <th scope="col" className="px-6 py-3">Fullname Driver</th>
+              <th scope="col" className="px-6 py-3">License Plate</th>
               <th scope="col" className="px-6 py-3">Date</th>
               <th scope="col" className="px-6 py-3">Time</th>
-              <th scope="col" className="px-6 py-3">
-                Action
-              </th>
+              <th scope="col" className="px-6 py-3">Action</th>
             </tr>
           </thead>
           <tbody>
             {paginatedRoutes.map((route) => (
-              <tr
-                key={route.routeId}
-                className="border-b bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-white dark:hover:bg-gray-200"
-              >
+              <tr key={route.routeId} className="border-b bg-white hover:bg-gray-50">
                 <td className="px-6 py-4">{route.startLocationName}</td>
                 <td className="px-6 py-4">{route.endLocationName}</td>
                 <td className="px-6 py-4">{formatTime(route.totalTime)}</td>
                 <td className="px-6 py-4">{convertM(route.totalDistance)}</td>
-                <td className="px-6 py-4">
-                  {route.driverId} {route.driver.firstName}{" "}
-                  {route.driver.lastName}{" "}
-                </td>
-                <td className="px-6 py-4">{route.vehicle.licensePlate}</td>
-                <td className="px-6 py-4">
-                  {new Date(route.routeDate).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4">
-                  {route.startTime}
-                </td>
+                <td className="px-6 py-4">{route.driverId} {route.driver?.firstName || ""} {route.driver?.lastName || ""}</td>
+                <td className="px-6 py-4">{route.vehicle?.licensePlate || ""}</td>
+                <td className="px-6 py-4">{new Date(route.routeDate).toLocaleDateString()}</td>
+                <td className="px-6 py-4">{route.startTime}</td>
                 <td className="px-2 py-4">
-                  <Button
-                    type="link"
-                    onClick={() => handleViewDetails(route.routeId)}
-                  >
+                  <Button type="link" onClick={() => handleViewDetails(route.routeId)}>
                     Detail
                   </Button>
                 </td>
@@ -780,8 +663,6 @@ const Route = () => {
             ))}
           </tbody>
         </table>
-
-        {/* Add pagination */}
         <div className="mt-4">
           <Pagination
             currentPage={currentPage}
@@ -811,75 +692,46 @@ const Route = () => {
                 <h3 className="mb-4 text-lg font-semibold">Route Overview</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <h4 className="text-sm font-medium text-gray-500">
-                      Total Distance
-                    </h4>
-                    <p className="text-lg text-black">
-                      {selectedRouteDetails.route?.routeId} meters
-                    </p>
+                    <h4 className="text-sm font-medium text-gray-500">Total Distance</h4>
+                    <p className="text-lg text-black">{selectedRouteDetails.route?.routeId} meters</p>
                   </div>
                   <div>
-                    <h4 className="text-sm font-medium text-gray-500">
-                      Total Time
-                    </h4>
+                    <h4 className="text-sm font-medium text-gray-500">Total Time</h4>
                     <p className="text-lg"></p>
                   </div>
                 </div>
               </div>
-
               <div className="mt-4 rounded-lg bg-gray-200 p-4">
-                <h3 className="mb-4 text-lg font-semibold">
-                  Assignment Details
-                </h3>
+                <h3 className="mb-4 text-lg font-semibold">Assignment Details</h3>
               </div>
             </div>
           )}
-
           <div className="rounded-lg bg-gray-200 p-4">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-2 text-xs font-medium text-gray-500">
-                      From
-                    </th>
-                    <th className="px-4 py-2 text-xs font-medium text-gray-500">
-                      To
-                    </th>
-                    <th className="px-4 py-2 text-xs font-medium text-gray-500">
-                      Distance
-                    </th>
-                    <th className="px-4 py-2 text-xs font-medium text-gray-500">
-                      Time Waypoint
-                    </th>
+                    <th className="px-4 py-2 text-xs font-medium text-gray-500">From</th>
+                    <th className="px-4 py-2 text-xs font-medium text-gray-500">To</th>
+                    <th className="px-4 py-2 text-xs font-medium text-gray-500">Distance</th>
+                    <th className="px-4 py-2 text-xs font-medium text-gray-500">Time Waypoint</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {wayPoints.map(
                     (wayPoint, index) =>
                       index < wayPoints.length - 1 && (
-                        <tr
-                          key={wayPoint.waypointId}
-                          className="hover:bg-gray-50"
-                        >
+                        <tr key={wayPoint.waypointId} className="hover:bg-gray-50">
+                          <td className="px-4 py-2 text-sm text-gray-900">{wayPoint.locationName}</td>
+                          <td className="px-4 py-2 text-sm text-gray-900">{wayPoints[index + 1].locationName}</td>
                           <td className="px-4 py-2 text-sm text-gray-900">
-                            {wayPoint.locationName}
+                            {interconnect[index] ? convertM(interconnect[index].distance) : ""}
                           </td>
                           <td className="px-4 py-2 text-sm text-gray-900">
-                            {wayPoints[index + 1].locationName}
-                          </td>
-                          <td className="px-4 py-2 text-sm text-gray-900">
-                            {interconnect[index]
-                              ? convertM(interconnect[index].distance)
-                              : ""}
-                          </td>
-                          <td className="px-4 py-2 text-sm text-gray-900">
-                            {interconnect[index]
-                              ? formatTime(interconnect[index].timeWaypoint)
-                              : ""}
+                            {interconnect[index] ? formatTime(interconnect[index].timeWaypoint) : ""}
                           </td>
                         </tr>
-                      ),
+                      )
                   )}
                 </tbody>
               </table>

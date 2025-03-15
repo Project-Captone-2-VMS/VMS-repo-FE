@@ -542,36 +542,6 @@ export const getUserUsername = async (username) => {
   const response = await api.get(`driver/getInfo/${username}`);
   return response.data;
 };
-export const createShipment = async (shipmentData) => {
-  const response = await api.post('shipment/save', shipmentData);
-  return response.data;
-};
-
-export const getAllShipments = async () => {
-  const response = await api.get("shipment/getAll");
-  return response.data;
-};
-
-export const deleteShipment = async (id) => {
-  const response = await api.delete(`shipment/delete/${id}`);
-  return response.data;
-};
-
-export const updateShipmentStatus = async (id, status) => {
-  const response = await api.put(`shipment/update/${id}`, { status });
-  return response.data;
-};
-
-export const saveItem = async (itemRequest) => {
-  const response = await api.post('item/save', itemRequest);
-  return response.data;
-};
-
-export const getAllItems = async (routeId) => {
-  const response = await api.get(`item/getAll/${routeId}`);
-  return response.data;
-};
-
 
 
 export const changePassword = async (username, passwords) => {
@@ -606,4 +576,35 @@ export const getAllShipmentByRouteId = async (routeId) => {
 export const logoutSystem = async (formData) => {
   const response = await api.post(`auth/logout`,formData);
   return response.data;
+};
+
+// Replace or add these functions
+export const getAllShipmentItems = async () => {
+  try {
+    const response = await api.get('shipment-item/getAll');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching shipment items:', error);
+    throw error;
+  }
+};
+
+export const createShipmentItem = async (shipmentItemData) => {
+  try {
+    const response = await api.post('shipment-item/create', shipmentItemData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating shipment item:', error);
+    throw error;
+  }
+};
+
+export const deleteShipmentItem = async (id) => {
+  try {
+    const response = await api.delete(`shipment-item/delete/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting shipment item:', error);
+    throw error;
+  }
 };
