@@ -9,10 +9,22 @@ module.exports = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      boxShadow: {
+        "inner-sm": "inset 0 1px 2px rgba(0, 0, 0, 0.1)", // Nhỏ
+        "inner-md": "inset 0px 1px 6px rgba(0, 0, 0, 0.25)", // Trung bình
+        "inner-lg": "inset 4px 4px 8px rgba(0, 0, 0, 0.3)", // Lớn
+        "inner-blue": "inset 2px 2px 5px rgba(0, 0, 255, 0.3)", // Màu xanh
+      },
+      textShadow: {
+        sm: "1px 1px 2px rgba(0, 0, 0, 0.5)",
+        default: "2px 2px 4px rgba(0, 0, 0, 0.5)",
+        lg: "3px 3px 6px rgba(0, 0, 0, 0.5)",
+      },
       fontSize: {
         10: "10px",
       },
       colors: {
+        hoverIcon: "#FB7F46",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {
@@ -23,6 +35,7 @@ module.exports = {
           Default: "#263238",
           Comment: "#607D8B",
           textSideBar: "#616161",
+          textVMS: "#3E5359",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -83,5 +96,21 @@ module.exports = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    function ({ addUtilities }) {
+      const newUtilities = {
+        ".text-shadow-sm": {
+          textShadow: "1px 1px 2px rgba(0, 0, 0, 0.5)",
+        },
+        ".text-shadow": {
+          textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
+        },
+        ".text-shadow-lg": {
+          textShadow: "0px 8px 4px rgba(0, 0, 0, 0.4)",
+        },
+      };
+      addUtilities(newUtilities, ["responsive", "hover"]);
+    },
+  ],
 };

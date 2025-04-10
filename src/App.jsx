@@ -1,7 +1,12 @@
-import {createBrowserRouter,RouterProvider,Navigate, Routes, Route} from "react-router-dom";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate,
+} from "react-router-dom";
 import Login from "./pages/Login";
-import Register from "./pages/Register";
+import Register from "./pages/RegisterPoint/RegisterEntryPoint";
 import DefaultLayout from "./layout/DefaultLayout";
+
 import PrivateRouter from "./components/PrivateRouter";
 import Dashboard from "./pages/Dashboard";
 import AuthLayout from "./layout/AuthLayout";
@@ -30,6 +35,9 @@ import { Toaster } from "react-hot-toast";
 import ChangePassWord from "./pages/ChangePassWord";
 import Schedule from "./pages/Schedule"; // Add this import at the top
 
+import OtpAuth from "../src/OtpAuth";
+import ForgetPassword from "./pages/ChangePassword/ForgetPassword";
+
 function App() {
   const router = createBrowserRouter([
     {
@@ -37,8 +45,12 @@ function App() {
       element: <Login />,
     },
     {
-      path: "/demo",
-      element: <Login />,
+      path: "/OtpAuth",
+      element: <OtpAuth />,
+    },
+    {
+      path: "/forgetPassword",
+      element: <ForgetPassword />,
     },
     {
       element: <AuthLayout />,

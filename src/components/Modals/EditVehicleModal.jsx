@@ -1,15 +1,7 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { AlertCircle } from 'lucide-react';
 
 const EditVehicleModal = ({ vehicle, onClose, onSave }) => {
   const [vehicleData, setVehicleData] = useState({
@@ -38,11 +30,13 @@ const EditVehicleModal = ({ vehicle, onClose, onSave }) => {
     switch (name) {
       case "licensePlate":
         if (!value) {
-          errors.licensePlate = "License plate is required";2
+          errors.licensePlate = "License plate is required";
+          2;
         } else if (value.length > 15) {
           errors.licensePlate = "License plate cannot exceed 15 characters";
         } else if (!/^[0-9]{2}[A-Z]{1}-\d{4,5}$/.test(value)) {
-          errors.licensePlate = "License plate must be in the format XXA-1234 or XX-12345 (2 digits, 1 letter, 4-5 digits)";
+          errors.licensePlate =
+            "License plate must be in the format XXA-1234 or XX-12345 (2 digits, 1 letter, 4-5 digits)";
         } else {
           delete errors.licensePlate;
         }
@@ -102,13 +96,17 @@ const EditVehicleModal = ({ vehicle, onClose, onSave }) => {
     const isValid = Object.keys(fieldErrors).length === 0;
     if (!isValid) return;
 
-    onSave({ ...vehicleData, status: vehicle.status, vehicleId: vehicle.vehicleId });
+    onSave({
+      ...vehicleData,
+      status: vehicle.status,
+      vehicleId: vehicle.vehicleId,
+    });
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto z-50 border border-gray-200">
+      <div className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-full max-w-xl -translate-x-1/2 -translate-y-1/2 transform overflow-y-auto rounded-lg border border-gray-200 bg-white p-6 shadow-xl">
         <h2 className="mb-4 text-xl font-bold">Edit Vehicle</h2>
         <form onSubmit={handleSubmit}>
           <label className="mb-2 block">
@@ -116,9 +114,9 @@ const EditVehicleModal = ({ vehicle, onClose, onSave }) => {
             <Input
               type="text"
               name="status"
-              value={vehicle.licensePlate }
+              value={vehicle.licensePlate}
               readOnly
-              className="w-full mt-1 bg-gray-100 cursor-not-allowed"
+              className="mt-1 w-full cursor-not-allowed bg-gray-100"
             />
             {fieldErrors.licensePlate && (
               <span className="text-sm text-red-500">
@@ -142,11 +140,15 @@ const EditVehicleModal = ({ vehicle, onClose, onSave }) => {
               <span className="text-sm text-red-500">{fieldErrors.type}</span>
             )}
           </label>
-          <Label className="block mb-2">
+          <Label className="mb-2 block">
             Status
-            <div className={`mt-1 px-3 py-2 rounded-md ${
-              vehicle.status ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"
-            }`}>
+            <div
+              className={`mt-1 rounded-md px-3 py-2 ${
+                vehicle.status
+                  ? "bg-yellow-100 text-yellow-800"
+                  : "bg-green-100 text-green-800"
+              }`}
+            >
               {vehicle.status ? "Busy (On Delivery)" : "Active (Available)"}
             </div>
           </Label>
@@ -203,4 +205,3 @@ const EditVehicleModal = ({ vehicle, onClose, onSave }) => {
 };
 
 export default EditVehicleModal;
-

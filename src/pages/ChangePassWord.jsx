@@ -10,7 +10,7 @@ import {
 } from "../components/ui/card";
 import { changePassword } from "@/services/apiRequest";
 import { Eye, EyeOff } from "lucide-react";
-import toast from 'react-hot-toast';  // Import toast
+import toast from "react-hot-toast";
 
 export default function ChangePassWord() {
   const [oldPassword, setOldPassword] = useState("");
@@ -27,14 +27,13 @@ export default function ChangePassWord() {
 
     if (newPassword === oldPassword) {
       setError("New password cannot be the same as the old password.");
-      toast.error("New password cannot be the same as the old password.");  // Show error toast
+      toast.error("New password cannot be the same as the old password.");
       return;
     }
 
     if (newPassword !== confirmPassword) {
       setError("New password and confirm password do not match.");
-      toast.error("New password and confirm password do not match.");  // Show error toast
-      return;
+      toast.error("New password and confirm password do not match.");
     }
 
     const passwords = {
@@ -44,20 +43,18 @@ export default function ChangePassWord() {
 
     try {
       await changePassword(username, passwords);
-      toast.success("Password changed successfully!");  // Show success toast
+      toast.success("Password changed successfully!");
       setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");
       setError("");
     } catch (error) {
       setError("Failed to change password.");
-      toast.error("Failed to change password.");  // Show error toast
+      toast.error("Failed to change password.");
     }
   };
 
-  useEffect(() => {
-    // Tải dữ liệu người dùng nếu cần thiết
-  }, [username]);
+  useEffect(() => {}, [username]);
 
   return (
     <Card className="mx-auto w-full max-w-md">
@@ -66,7 +63,6 @@ export default function ChangePassWord() {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
-          {/* Current Password Input */}
           <div className="space-y-2">
             <Label htmlFor="oldPassword">Current Password</Label>
             <div className="relative">
@@ -80,14 +76,13 @@ export default function ChangePassWord() {
               <button
                 type="button"
                 onClick={() => setShowOldPassword(!showOldPassword)}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                className="absolute right-2 top-1/2 -translate-y-1/2 transform"
               >
                 {showOldPassword ? <EyeOff /> : <Eye />}
               </button>
             </div>
           </div>
 
-          {/* New Password Input */}
           <div className="space-y-2">
             <Label htmlFor="newPassword">New Password</Label>
             <div className="relative">
@@ -101,14 +96,13 @@ export default function ChangePassWord() {
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                className="absolute right-2 top-1/2 -translate-y-1/2 transform"
               >
                 {showNewPassword ? <EyeOff /> : <Eye />}
               </button>
             </div>
           </div>
 
-          {/* Confirm Password Input */}
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirm New Password</Label>
             <div className="relative">
@@ -122,7 +116,7 @@ export default function ChangePassWord() {
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                className="absolute right-2 top-1/2 -translate-y-1/2 transform"
               >
                 {showConfirmPassword ? <EyeOff /> : <Eye />}
               </button>
