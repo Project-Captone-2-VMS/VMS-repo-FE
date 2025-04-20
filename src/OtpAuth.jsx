@@ -89,7 +89,6 @@ const App = () => {
       });
   };
 
-  console.log("phoneNumber", phoneNumber);
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <Toaster toastOptions={{ duration: 4000 }} />

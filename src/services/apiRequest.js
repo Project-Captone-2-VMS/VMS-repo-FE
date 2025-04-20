@@ -280,6 +280,7 @@ export const getAllProducts = async (warehouseId) => {
   const response = await api.get(`product/all/${warehouseId}`);
   return response.data;
 };
+
 export const getWarehouseById = async (warehouseId) => {
   try {
     const response = await api.get(`warehouse/${warehouseId}`);
@@ -288,6 +289,7 @@ export const getWarehouseById = async (warehouseId) => {
     throw error;
   }
 };
+
 // API gọi để lấy danh sách hóa đơn
 export const getAllInvoices = async (warehouseId) => {
   const response = await api.get(`invoices/${warehouseId}`);

@@ -1,4 +1,3 @@
-import React from "react";
 import { MdMailOutline } from "react-icons/md";
 import { FaPhone } from "react-icons/fa6";
 import { IoPersonCircleOutline } from "react-icons/io5";

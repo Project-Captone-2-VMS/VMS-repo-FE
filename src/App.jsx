@@ -32,7 +32,7 @@ import RouteDetailUser from "./pages/RouteDetailUser";
 import ShowTrackingUser from "./pages/RealtimeTrackingUser/ShowTrackingUser";
 import ShipmentManage from "./pages/Shipment/ShipmentManage";
 import { Toaster } from "react-hot-toast";
-import ChangePassWord from "./pages/ChangePassWord";
+import ChangePassWord from "./pages/ChangePassword/ChangePassWord";
 import Schedule from "./pages/Schedule"; // Add this import at the top
 
 import OtpAuth from "../src/OtpAuth";

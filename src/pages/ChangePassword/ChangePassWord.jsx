@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "../components/ui/card";
+} from "../../components/ui/card";
 import { changePassword } from "@/services/apiRequest";
 import { Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
@@ -17,7 +17,6 @@ export default function ChangePassWord() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
-  const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const username = localStorage.getItem("username");
@@ -63,26 +62,6 @@ export default function ChangePassWord() {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="oldPassword">Current Password</Label>
-            <div className="relative">
-              <Input
-                id="oldPassword"
-                type={showOldPassword ? "text" : "password"}
-                value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowOldPassword(!showOldPassword)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 transform"
-              >
-                {showOldPassword ? <EyeOff /> : <Eye />}
-              </button>
-            </div>
-          </div>
-
           <div className="space-y-2">
             <Label htmlFor="newPassword">New Password</Label>
             <div className="relative">

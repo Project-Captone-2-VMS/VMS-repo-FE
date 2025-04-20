@@ -1,12 +1,15 @@
 import { useEffect } from "react";
+import { CgSpinner } from "react-icons/cg";
 import OTPInput from "react-otp-input";
 
 const OTP = ({
+  setIsOtpVisible,
   otp,
   setOtp,
   countdown,
+  loading,
   setCountdown,
-  setIsOtpVisible,
+  handleVerifyOtp,
 }) => {
   // const [otp, setOtp] = useState("");
   // const [countdown, setCountdown] = useState(60);
@@ -68,6 +71,15 @@ const OTP = ({
             </button>
           )}
         </p>
+
+        <button
+          onClick={handleVerifyOtp}
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 py-2 text-white"
+          disabled={loading}
+        >
+          {loading && <CgSpinner className="animate-spin" />}
+          Xác minh OTP
+        </button>
       </div>
     </>
   );

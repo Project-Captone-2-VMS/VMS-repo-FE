@@ -4,7 +4,7 @@ import { Key } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import OtpForm from "@/components/OTPform/OtpForm";
-import ChangePassWord from "../ChangePassWord";
+import ChangePassWord from "./ChangePassWord";
 
 const ForgetPassword = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -22,21 +22,23 @@ const ForgetPassword = () => {
   }, [countdown]);
 
   const handleVerifyOtp = () => {
-    console.log("Verifying OTP:", otp); // Debug giá trị OTP
+    console.log("Verifying OTP:", otp);
     if (!otp || otp.length !== 6) {
       toast.error("Vui lòng nhập mã OTP 6 chữ số hợp lệ!");
       return;
     }
+
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
       toast.success("Xác minh thành công!");
       setIsOtpVisible(false);
       setIsChangePassVisible(true);
-      console.log("Switching to ChangePassWord"); // Debug trạng thái chuyển đổi
+      console.log("Switching to ChangePassWord");
       setOtp("");
     }, 1000);
   };
+
   const handleSendOTP = (e) => {
     e.preventDefault();
 
