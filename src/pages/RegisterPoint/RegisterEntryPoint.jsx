@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
-
 import {
   checkEmail,
   checkPhoneNumber,
   registerUser,
 } from "../../services/apiRequest";
-
 import * as Yup from "yup";
 import toast from "react-hot-toast";
-import background from "../../assets/images/background.png";
+import background from "../../assets/images/datnuoc.jpg"; // Import the tank image
 import RegisterFirstForm from "./RegisterFirstForm";
 import RegisterSecondForm from "./RegisterSecondForm";
 import OtpForm from "../../components/OTPform/OtpForm";
@@ -34,7 +32,6 @@ const Register2 = () => {
       setInterval(() => setCountdown((prev) => prev - 1), 1000);
     return () => clearInterval(timer);
   }, [countdown]);
-
 
   const handleVerifyOtp = () => {
     if (!otp || otp.length !== 6) {
@@ -101,7 +98,7 @@ const Register2 = () => {
           setIsOtpVisible(true);
         }
       } catch (error) {
-        toast.err("Error checking email or phone number.");
+        toast.error("Error checking email or phone number.");
       }
     },
   });
@@ -148,37 +145,75 @@ const Register2 = () => {
 
   return (
     <div className="relative min-h-screen">
+      {/* Background Image */}
       <div
-        className="brightness-80 absolute inset-0 w-full bg-cover bg-center object-contain"
+        className="absolute inset-0 w-full h-full bg-cover bg-center"
         style={{
           backgroundImage: `url(${background})`,
-          pointerEvents: "none",
         }}
       ></div>
-      <div className="relative z-10 flex min-h-screen items-center justify-center bg-transparent">
-        {!isOtpVisible && !isSecondForm && (
-          <RegisterFirstForm formik={firstFormFormik} />
-        )}
-        {isOtpVisible && !isSecondForm && (
-          <OtpForm
-            phoneNumber={phoneNumber}
-            otp={otp}
-            setOtp={setOtp}
-            countdown={countdown}
-            setCountdown={setCountdown}
-            handleVerifyOtp={handleVerifyOtp}
-            setIsOtpVisible={setIsOtpVisible}
-            loading={loading}
-          />
-        )}
-        {isSecondForm && !isOtpVisible && (
-          <RegisterSecondForm
-            formik={secondFormFormik}
-            showPassword={showPassword}
-            setShowPassword={setShowPassword}
-          />
-        )}
+
+      {/* Overlay for better contrast */}
+      <div className="absolute inset-0 w-full h-full bg-black bg-opacity-40"></div>
+
+      {/* Content Container */}
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4">
+        {/* Anniversary Text */}
+        <div className="text-center mb-8 animate-fade-in">
+          <h2 className="text-4xl md:text-5xl font-bold text-red-500 drop-shadow-md">
+            Cùng Duy Tân Chào Mừng 50 Năm Thống Nhất
+          </h2>
+          <p className="text-2xl md:text-3xl mt-2 text-yellow-500 drop-shadow-md">
+            Đất Nước 30/4/1975 - 30/4/2025
+          </p>
+        </div>
+
+        {/* Form Container */}
+        <div className="w-full max-w-md rounded-2xl bg-white bg-opacity-90 p-8 shadow-2xl animate-fade-in">
+          {!isOtpVisible && !isSecondForm && (
+            <RegisterFirstForm formik={firstFormFormik} />
+          )}
+          {isOtpVisible && !isSecondForm && (
+            <OtpForm
+              phoneNumber={phoneNumber}
+              otp={otp}
+              setOtp={setOtp}
+              countdown={countdown}
+              setCountdown={setCountdown}
+              handleVerifyOtp={handleVerifyOtp}
+              setIsOtpVisible={setIsOtpVisible}
+              loading={loading}
+            />
+          )}
+          {isSecondForm && !isOtpVisible && (
+            <RegisterSecondForm
+              formik={secondFormFormik}
+              showPassword={showPassword}
+              setShowPassword={setShowPassword}
+            />
+          )}
+        </div>
       </div>
+
+      {/* Custom Animation Styles */}
+      <style>
+        {`
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+              transform: translateY(20px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          .animate-fade-in {
+            animation: fadeIn 0.8s ease-in-out forwards;
+          }
+        `}
+      </style>
     </div>
   );
 };

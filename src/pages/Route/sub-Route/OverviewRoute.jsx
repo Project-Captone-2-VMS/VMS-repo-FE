@@ -19,7 +19,6 @@ import Pagination from "@/components/Pagination";
 const { Option } = Select;
 
 const Route = () => {
-  // Các state không thay đổi, giữ nguyên như mã gốc
   const [routes, setRoutes] = useState([]);
   const [selectedRouteDetails, setSelectedRouteDetails] = useState(null);
   const [wayPoints, setWayPoints] = useState([]);
@@ -69,6 +68,7 @@ const Route = () => {
   const [warehouseLocations, setWarehouseLocations] = useState([]);
   const [customOrigin, setCustomOrigin] = useState("");
   const [customDestination, setCustomDestination] = useState("");
+  const [destinationSuggestions, setDestinationSuggestions] = useState([]); // State cho gợi ý điểm đến
 
   const routePolylines = useRef([]);
   const markers = useRef([]);
@@ -237,36 +237,59 @@ const Route = () => {
     }
   };
 
-  // Hàm fetchRoute sửa đổi để gọi trực tiếp HERE Maps API nếu backend không hỗ trợ
+  // Hàm tìm kiếm gợi ý địa điểm sử dụng HERE API
+  const fetchDestinationSuggestions = async (query) => {
+    if (!query || query.length < 3) {
+      setDestinationSuggestions([]);
+      return;
+    }
+
+    try {
+      const response = await axios.get("https://autosuggest.search.hereapi.com/v1/autosuggest", {
+        params: {
+          q: query,
+          at: "16.0583,108.2210", // Vị trí trung tâm để tìm kiếm (có thể thay đổi)
+          limit: 3, // Giới hạn số gợi ý trả về
+          lang: "vi-VN", // Ngôn ngữ (có thể thay đổi)
+          apiKey: apiKey,
+        },
+      });
+
+      if (response.data.items && response.data.items.length > 0) {
+        setDestinationSuggestions(response.data.items);
+      } else {
+        setDestinationSuggestions([]);
+      }
+    } catch (error) {
+      console.error("Error fetching suggestions:", error);
+      setDestinationSuggestions([]);
+    }
+  };
+
   const fetchRoute = async (originCoords, destinationCoords) => {
     setLoading(true);
     setError(null);
     try {
-      // Xóa các polyline và marker cũ
       routePolylines.current.forEach((polyline) => map.removeObject(polyline));
       routePolylines.current = [];
       markers.current.forEach((marker) => map.removeObject(marker));
       markers.current = [];
 
-      // Gọi trực tiếp HERE Maps API để lấy 2 tuyến đường
       const response = await axios.get("https://router.hereapi.com/v8/routes", {
         params: {
           origin: `${originCoords.lat},${originCoords.lng}`,
           destination: `${destinationCoords.lat},${destinationCoords.lng}`,
           transportMode: "car",
-          alternatives: 2, // Yêu cầu 1 tuyến thay thế (tổng cộng 2 tuyến)
+          alternatives: 2,// Số lượng tuyến đường thay thế
           return: "polyline,summary",
           apikey: apiKey,
         },
       });
 
-      console.log("HERE API Response:", response.data);
-
       if (response.data.routes && response.data.routes.length > 0) {
-        const routesData = response.data.routes.slice(0, 3); // Lấy tối đa 2 tuyến
+        const routesData = response.data.routes.slice(0, 3);// Giới hạn số lượng tuyến đường hiển thị
         setRoutes(routesData);
 
-        // Tìm tuyến ngắn nhất
         let minIndex = 0;
         let minDistance = routesData[0].sections[0].summary.length;
         for (let i = 1; i < routesData.length; i++) {
@@ -277,10 +300,9 @@ const Route = () => {
         }
         setSelectedRouteIndex(minIndex);
 
-        // Vẽ các tuyến đường lên bản đồ
         routesData.forEach((route, index) => {
           const section = route.sections[0];
-          const polylineData = section.polyline; // Polyline từ HERE API
+          const polylineData = section.polyline;
           const routeLine = H.geo.LineString.fromFlexiblePolyline(polylineData);
           const strokeColor = index === minIndex ? "red" : index === 0 ? "blue" : "green";
           const routePolyline = new H.map.Polyline(routeLine, {
@@ -294,7 +316,6 @@ const Route = () => {
           }
         });
 
-        // Thêm marker cho điểm xuất phát và điểm đến
         const originMarker = new H.map.Marker({ lat: originCoords.lat, lng: originCoords.lng });
         const destinationMarker = new H.map.Marker({ lat: destinationCoords.lat, lng: destinationCoords.lng });
         map.addObjects([originMarker, destinationMarker]);
@@ -366,7 +387,7 @@ const Route = () => {
       };
 
       const headers = {
-        Authorization: `Bearer ${token}`, // Sử dụng token thực tế
+        Authorization: `Bearer ${token}`,
       };
 
       const results = await findSequence({ ...formData, headers });
@@ -429,7 +450,6 @@ const Route = () => {
     }
   }, [selectedRouteIndex, routes]);
 
-  // Phần JSX giữ nguyên như mã gốc
   return (
     <div>
       <div className="flex justify-between">
@@ -453,6 +473,7 @@ const Route = () => {
                       setOrigin(value);
                       if (value === destination) {
                         setDestination("");
+                        setDestinationSuggestions([]);
                       }
                     }}
                     onSearch={(value) => setCustomOrigin(value)}
@@ -481,24 +502,45 @@ const Route = () => {
                   <Select
                     className="mt-1 w-full"
                     value={destination}
-                    onChange={(value) => setDestination(value)}
-                    onSearch={(value) => setCustomDestination(value)}
+                    onChange={(value) => {
+                      setDestination(value);
+                      setDestinationSuggestions([]);
+                    }}
+                    onSearch={(value) => {
+                      setCustomDestination(value);
+                      fetchDestinationSuggestions(value); // Gọi API tìm kiếm gợi ý
+                    }}
                     showSearch
                     allowClear
-                    mode="combobox"
                     placeholder="Select or enter end location"
                     filterOption={false}
+                    notFoundContent={null}
                   >
-                    {warehouseLocations
-                      .filter((warehouse) => warehouse.location !== origin)
-                      .map((warehouse) => (
-                        <Option key={warehouse.warehouseId} value={warehouse.location}>
-                          {warehouse.warehouseName} - {warehouse.location}
-                        </Option>
-                      ))}
-                    {customDestination && (
+                    {destinationSuggestions.length > 0
+                      ? destinationSuggestions.map((suggestion) => (
+                          <Option key={suggestion.id} value={suggestion.title}>
+                            <div className="flex items-center">
+                              <span className="mr-2">📍</span>
+                              <span>{suggestion.title}</span>
+                            </div>
+                          </Option>
+                        ))
+                      : warehouseLocations
+                          .filter((warehouse) => warehouse.location !== origin)
+                          .map((warehouse) => (
+                            <Option key={warehouse.warehouseId} value={warehouse.location}>
+                              <div className="flex items-center">
+                                <span className="mr-2">📍</span>
+                                <span>{warehouse.warehouseName} - {warehouse.location}</span>
+                              </div>
+                            </Option>
+                          ))}
+                    {customDestination && !destinationSuggestions.some(sug => sug.title === customDestination) && (
                       <Option key="custom" value={customDestination}>
-                        {customDestination}
+                        <div className="flex items-center">
+                          <span className="mr-2">📍</span>
+                          <span>{customDestination}</span>
+                        </div>
                       </Option>
                     )}
                   </Select>

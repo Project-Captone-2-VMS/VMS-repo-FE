@@ -138,21 +138,12 @@ const AllocationProduct = () => {
         Number(allocation.price) > 0
       );
     
-    console.log('Validation:', {
-      hasWarehouse,
-      hasRoute,
-      hasValidAllocations,
-      allocations
-    });
-    
     return hasWarehouse && hasRoute && hasValidAllocations;
   };
 
   const handleSubmitAllocation = async () => {
     try {
       setIsSubmitting(true);
-      
-      // Vì đã gộp shipment và item nên chỉ gọi createShipmentItem
       const itemPromises = allocations.map(allocation => {
         const itemRequest = {
           shipmentItemName: allocation.productName,
@@ -208,7 +199,7 @@ const AllocationProduct = () => {
         </CardHeader>
         <CardContent>
           <div className="min-h-screen bg-gray-50 py-8">
-            <div className="container mx-auto px-4 space-y-8 max-w-7xl">
+            <div className="container mx-auto px-4 space-y-8 max-w-[95vw]">
               <h1 className="text-3xl font-bold tracking-tight">Product Allocation</h1>
 
               <div className="grid gap-8 lg:grid-cols-2">
@@ -248,16 +239,21 @@ const AllocationProduct = () => {
                           onValueChange={setSelectedRoute}
                           disabled={loading}
                         >
-                          <SelectTrigger className="w-full min-h-[80px] h-auto p-4">
+                          <SelectTrigger className="w-full h-14 px-4 overflow-hidden">
                             <SelectValue placeholder="Select Route">
                               {selectedRoute && routes.find(r => r.routeId.toString() === selectedRoute) && (
-                                <div className="flex flex-col space-y-2">
-                                  <div className="font-medium">Route {selectedRoute}</div>
-                                  <div className="text-gray-600 truncate">
-                                    🚗: {routes.find(r => r.routeId.toString() === selectedRoute)?.startLocationName}
+                                <div className="flex flex-col text-sm">
+                                  <div className="flex items-center space-x-2 truncate">
+                                    <MapPin className="h-4 w-4 text-green-500" />
+                                    <span className="truncate">
+                                      From: {routes.find(r => r.routeId.toString() === selectedRoute)?.startLocationName}
+                                    </span>
                                   </div>
-                                  <div className="text-gray-600 truncate">
-                                    🎯: {routes.find(r => r.routeId.toString() === selectedRoute)?.endLocationName}
+                                  <div className="flex items-center space-x-2 truncate">
+                                    <MapPin className="h-4 w-4 text-red-500" />
+                                    <span className="truncate">
+                                      To: {routes.find(r => r.routeId.toString() === selectedRoute)?.endLocationName}
+                                    </span>
                                   </div>
                                 </div>
                               )}
