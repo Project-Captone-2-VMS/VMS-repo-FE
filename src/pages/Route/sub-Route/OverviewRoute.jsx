@@ -19,7 +19,6 @@ import Pagination from "@/components/Pagination";
 const { Option } = Select;
 
 const Route = () => {
-  // Các state không thay đổi, giữ nguyên như mã gốc
   const [routes, setRoutes] = useState([]);
   const [selectedRouteDetails, setSelectedRouteDetails] = useState(null);
   const [wayPoints, setWayPoints] = useState([]);
@@ -69,6 +68,7 @@ const Route = () => {
   const [warehouseLocations, setWarehouseLocations] = useState([]);
   const [customOrigin, setCustomOrigin] = useState("");
   const [customDestination, setCustomDestination] = useState("");
+  const [destinationSuggestions, setDestinationSuggestions] = useState([]);
 
   const routePolylines = useRef([]);
   const markers = useRef([]);
@@ -237,36 +237,65 @@ const Route = () => {
     }
   };
 
-  // Hàm fetchRoute sửa đổi để gọi trực tiếp HERE Maps API nếu backend không hỗ trợ
-  const fetchRoute = async (originCoords, destinationCoords) => {
+  const fetchDestinationSuggestions = async (query) => {
+    if (!query || query.length < 3) {
+      setDestinationSuggestions([]);
+      return;
+    }
+
+    try {
+      const response = await axios.get("https://autosuggest.search.hereapi.com/v1/autosuggest", {
+        params: {
+          q: query,
+          at: "16.0583,108.2210",
+          limit: 3,
+          lang: "vi-VN",
+          apiKey: apiKey,
+        },
+      });
+
+      if (response.data.items && response.data.items.length > 0) {
+        setDestinationSuggestions(response.data.items);
+      } else {
+        setDestinationSuggestions([]);
+      }
+    } catch (error) {
+      console.error("Error fetching suggestions:", error);
+      setDestinationSuggestions([]);
+    }
+  };
+
+  // Updated fetchRoute to include waypoints
+  const fetchRoute = async (originCoords, destinationCoords, waypoints = []) => {
     setLoading(true);
     setError(null);
     try {
-      // Xóa các polyline và marker cũ
       routePolylines.current.forEach((polyline) => map.removeObject(polyline));
       routePolylines.current = [];
       markers.current.forEach((marker) => map.removeObject(marker));
       markers.current = [];
 
-      // Gọi trực tiếp HERE Maps API để lấy 2 tuyến đường
-      const response = await axios.get("https://router.hereapi.com/v8/routes", {
-        params: {
-          origin: `${originCoords.lat},${originCoords.lng}`,
-          destination: `${destinationCoords.lat},${destinationCoords.lng}`,
-          transportMode: "car",
-          alternatives: 2, // Yêu cầu 1 tuyến thay thế (tổng cộng 2 tuyến)
-          return: "polyline,summary",
-          apikey: apiKey,
-        },
-      });
+      let params = {
+        origin: `${originCoords.lat},${originCoords.lng}`,
+        destination: `${destinationCoords.lat},${destinationCoords.lng}`,
+        transportMode: "car",
+        alternatives: 2,
+        return: "polyline,summary",
+        apikey: apiKey,
+      };
 
-      console.log("HERE API Response:", response.data);
+      // Add waypoints if provided
+      if (waypoints.length > 0) {
+        const via = waypoints.map((coord) => `${coord.lat},${coord.lng}`).join(";");
+        params.via = via;
+      }
+
+      const response = await axios.get("https://router.hereapi.com/v8/routes", { params });
 
       if (response.data.routes && response.data.routes.length > 0) {
-        const routesData = response.data.routes.slice(0, 3); // Lấy tối đa 2 tuyến
+        const routesData = response.data.routes.slice(0, 3);
         setRoutes(routesData);
 
-        // Tìm tuyến ngắn nhất
         let minIndex = 0;
         let minDistance = routesData[0].sections[0].summary.length;
         for (let i = 1; i < routesData.length; i++) {
@@ -277,10 +306,9 @@ const Route = () => {
         }
         setSelectedRouteIndex(minIndex);
 
-        // Vẽ các tuyến đường lên bản đồ
         routesData.forEach((route, index) => {
           const section = route.sections[0];
-          const polylineData = section.polyline; // Polyline từ HERE API
+          const polylineData = section.polyline;
           const routeLine = H.geo.LineString.fromFlexiblePolyline(polylineData);
           const strokeColor = index === minIndex ? "red" : index === 0 ? "blue" : "green";
           const routePolyline = new H.map.Polyline(routeLine, {
@@ -294,11 +322,13 @@ const Route = () => {
           }
         });
 
-        // Thêm marker cho điểm xuất phát và điểm đến
         const originMarker = new H.map.Marker({ lat: originCoords.lat, lng: originCoords.lng });
         const destinationMarker = new H.map.Marker({ lat: destinationCoords.lat, lng: destinationCoords.lng });
-        map.addObjects([originMarker, destinationMarker]);
-        markers.current.push(originMarker, destinationMarker);
+        const waypointMarkers = waypoints.map(
+          (coord) => new H.map.Marker({ lat: coord.lat, lng: coord.lng })
+        );
+        map.addObjects([originMarker, destinationMarker, ...waypointMarkers]);
+        markers.current.push(originMarker, destinationMarker, ...waypointMarkers);
       } else {
         setError("No routes found.");
       }
@@ -331,6 +361,7 @@ const Route = () => {
     setSelectedCoordinates([]);
   };
 
+  // Updated handleFindSequence to include polyline
   const handleFindSequence = async () => {
     if (!validateDateTime()) return;
     if (selectedCoordinates.length < 2) {
@@ -341,6 +372,12 @@ const Route = () => {
       setError("Please select both date and time for the route.");
       return;
     }
+    // Ensure a route has been fetched
+    if (routes.length === 0 || !routes[selectedRouteIndex]) {
+      setError("Please fetch a route first by clicking 'Get Route'.");
+      return;
+    }
+
     const formatDate = (dateString) => {
       const date = new Date(dateString);
       const day = String(date.getDate()).padStart(2, "0");
@@ -353,6 +390,12 @@ const Route = () => {
       const destinationCoords = await geocode(destination);
       const destinations = selectedCoordinates.map((coord) => `${coord.lat},${coord.lng}`).join(",");
 
+      // Extract polyline from the selected route
+      let polyline = "";
+      if (routes[selectedRouteIndex].sections && routes[selectedRouteIndex].sections[0]) {
+        polyline = routes[selectedRouteIndex].sections[0].polyline || "";
+      }
+
       const formData = {
         startLat: originCoords.lat,
         startLng: originCoords.lng,
@@ -363,10 +406,11 @@ const Route = () => {
         vehicleId: selectedVehicle,
         startDate: formatDate(routeDate),
         startTime: `${routeTime}:00`,
+        polyline: polyline, // Include the flexible polyline string
       };
 
       const headers = {
-        Authorization: `Bearer ${token}`, // Sử dụng token thực tế
+        Authorization: `Bearer ${token}`,
       };
 
       const results = await findSequence({ ...formData, headers });
@@ -378,20 +422,19 @@ const Route = () => {
         stompClient.disconnect(() => {
           console.log("Đã ngắt kết nối socket cũ!");
         });
-      } else {
-        socket = new SockJS("http://localhost:8080/ws");
-        stompClient = over(socket);
-        stompClient.connect({}, () => {
-          stompClient.send(
-            `/app/chat/${findUserNameByDriverId}`,
-            {},
-            JSON.stringify(formDataSendNotification)
-          );
-          toast.success("Successfully created!");
-          console.log("Notification Sent:", formDataSendNotification);
-          window.location.reload();
-        });
       }
+      socket = new SockJS("http://localhost:8080/ws");
+      stompClient = over(socket);
+      stompClient.connect({}, () => {
+        stompClient.send(
+          `/app/chat/${findUserNameByDriverId}`,
+          {},
+          JSON.stringify(formDataSendNotification)
+        );
+        toast.success("Successfully created!");
+        console.log("Notification Sent:", formDataSendNotification);
+        window.location.reload();
+      });
       resetForm();
     } catch (error) {
       if (error.response && error.response.data) {
@@ -409,7 +452,7 @@ const Route = () => {
     try {
       const originCoords = await geocode(origin);
       const destinationCoords = await geocode(destination);
-      await fetchRoute(originCoords, destinationCoords);
+      await fetchRoute(originCoords, destinationCoords, selectedCoordinates);
     } catch (error) {
       setError("Failed to geocode location. Please check the addresses.");
     } finally {
@@ -429,7 +472,6 @@ const Route = () => {
     }
   }, [selectedRouteIndex, routes]);
 
-  // Phần JSX giữ nguyên như mã gốc
   return (
     <div>
       <div className="flex justify-between">
@@ -453,6 +495,7 @@ const Route = () => {
                       setOrigin(value);
                       if (value === destination) {
                         setDestination("");
+                        setDestinationSuggestions([]);
                       }
                     }}
                     onSearch={(value) => setCustomOrigin(value)}
@@ -481,26 +524,48 @@ const Route = () => {
                   <Select
                     className="mt-1 w-full"
                     value={destination}
-                    onChange={(value) => setDestination(value)}
-                    onSearch={(value) => setCustomDestination(value)}
+                    onChange={(value) => {
+                      setDestination(value);
+                      setDestinationSuggestions([]);
+                    }}
+                    onSearch={(value) => {
+                      setCustomDestination(value);
+                      fetchDestinationSuggestions(value);
+                    }}
                     showSearch
                     allowClear
-                    mode="combobox"
                     placeholder="Select or enter end location"
                     filterOption={false}
+                    notFoundContent={null}
                   >
-                    {warehouseLocations
-                      .filter((warehouse) => warehouse.location !== origin)
-                      .map((warehouse) => (
-                        <Option key={warehouse.warehouseId} value={warehouse.location}>
-                          {warehouse.warehouseName} - {warehouse.location}
+                    {destinationSuggestions.length > 0
+                      ? destinationSuggestions.map((suggestion) => (
+                          <Option key={suggestion.id} value={suggestion.title}>
+                            <div className="flex items-center">
+                              <span className="mr-2">📍</span>
+                              <span>{suggestion.title}</span>
+                            </div>
+                          </Option>
+                        ))
+                      : warehouseLocations
+                          .filter((warehouse) => warehouse.location !== origin)
+                          .map((warehouse) => (
+                            <Option key={warehouse.warehouseId} value={warehouse.location}>
+                              <div className="flex items-center">
+                                <span className="mr-2">📍</span>
+                                <span>{warehouse.warehouseName} - {warehouse.location}</span>
+                              </div>
+                            </Option>
+                          ))}
+                    {customDestination &&
+                      !destinationSuggestions.some((sug) => sug.title === customDestination) && (
+                        <Option key="custom" value={customDestination}>
+                          <div className="flex items-center">
+                            <span className="mr-2">📍</span>
+                            <span>{customDestination}</span>
+                          </div>
                         </Option>
-                      ))}
-                    {customDestination && (
-                      <Option key="custom" value={customDestination}>
-                        {customDestination}
-                      </Option>
-                    )}
+                      )}
                   </Select>
                 </label>
               </div>
@@ -650,7 +715,9 @@ const Route = () => {
                 <td className="px-6 py-4">{route.endLocationName}</td>
                 <td className="px-6 py-4">{formatTime(route.totalTime)}</td>
                 <td className="px-6 py-4">{convertM(route.totalDistance)}</td>
-                <td className="px-6 py-4">{route.driverId} {route.driver?.firstName || ""} {route.driver?.lastName || ""}</td>
+                <td className="px-6 py-4">
+                  {route.driverId} {route.driver?.firstName || ""} {route.driver?.lastName || ""}
+                </td>
                 <td className="px-6 py-4">{route.vehicle?.licensePlate || ""}</td>
                 <td className="px-6 py-4">{new Date(route.routeDate).toLocaleDateString()}</td>
                 <td className="px-6 py-4">{route.startTime}</td>
