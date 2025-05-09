@@ -30,6 +30,7 @@ import ShowTrackingUser from "./pages/RealtimeTrackingUser/ShowTrackingUser";
 import ShipmentManage from "./pages/Shipment/ShipmentManage";
 import { Toaster } from "react-hot-toast";
 import ChangePassWord from "./pages/ChangePassWord";
+import DashboardStats from "@/components/Analytics/DashboardStats.jsx";
 
 
 function App() {
@@ -54,6 +55,10 @@ function App() {
           element: <Register />,
         },
       ],
+    },
+    {
+      path: "/dashboard-stats",
+      element: <DashboardStats />,
     },
     {
       element: <DefaultLayout />,
