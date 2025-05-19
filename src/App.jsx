@@ -4,7 +4,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import Login from "./pages/Login";
-import Register from "./pages/RegisterPoint/RegisterEntryPoint";
+import Register from "./pages/Register";
 import DefaultLayout from "./layout/DefaultLayout";
 
 import PrivateRouter from "./components/PrivateRouter";
