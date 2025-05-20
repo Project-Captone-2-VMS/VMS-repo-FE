@@ -1,62 +1,223 @@
 import React, { useState, useEffect } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line } from 'recharts';
-import { Truck, AlertTriangle, Package, Zap, BarChart2, TrendingUp, Clock, Calendar } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { Truck, Package, Users, TrendingUp, MapPin, Navigation } from 'lucide-react';
+import { dashboardService } from '../services/apiRequest';
+import db1  from "../assets/images/dashboard1.png";
+import db2 from "../assets/images/dashboard2.png";
+import db3 from "../assets/images/dashboard3.jpg";
+import db4 from "../assets/images/dashboard4.png";
+import db5 from "../assets/images/dashboard5.jpg";
+// Logistics Image Carousel Component
+const LogisticsImageCarousel = () => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
+  // Five logistics-themed images
+  const logisticsImages = [
+    {
+      src: db1, 
+      alt: "Global Transportation",
+      title: "Integrated Logistics",
+      description: "Multi-modal transportation and global supply chain solutions",
+      gradient: "from-blue-600 to-indigo-700",
+    },
+    {
+      src: db2, // Line of red and blue trucks
+      alt: "Fleet Management",
+      title: "Fleet Operations",
+      description: "Modern fleet management and vehicle tracking systems",
+      gradient: "from-green-600 to-emerald-700",
+    },
+    {
+      src: db3, // Network map with icons
+      alt: "Network Operations",
+      title: "Network Management",
+      description: "Intelligent routing and network optimization",
+      gradient: "from-purple-600 to-pink-700",
+    },
+    {
+      src: db4, // Supply chain map with icons
+      alt: "Supply Chain",
+      title: "Supply Chain Analytics",
+      description: "End-to-end visibility and supply chain intelligence",
+      gradient: "from-amber-600 to-orange-700",
+    },
+    {
+      src: db5 , // Container port aerial view
+      alt: "Container Operations",
+      title: "Container Management",
+      description: "Efficient container handling and port operations",
+      gradient: "from-teal-600 to-cyan-700",
+    },
+  ];
+
+  // Auto-rotate through images
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % logisticsImages.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="h-[500px] rounded-xl relative overflow-hidden shadow-lg">
+      <div className={`absolute inset-0 bg-gradient-to-r ${logisticsImages[currentImageIndex].gradient} transition-opacity duration-1000 animate-fade-in`}>
+        <img
+          src={logisticsImages[currentImageIndex].src}
+          alt={logisticsImages[currentImageIndex].alt}
+          className="w-full h-full object-cover opacity-75 transition-transform duration-1000 hover:scale-105"
+          style={{ maxHeight: '500px' }}
+        />
+        <div className="absolute inset-0 flex items-center justify-center p-6 bg-black bg-opacity-30">
+          <div className="text-white text-center animate-slide-in">
+            <h3 className="text-3xl font-bold mb-4">{logisticsImages[currentImageIndex].title}</h3>
+            <p className="text-lg opacity-90 max-w-2xl">{logisticsImages[currentImageIndex].description}</p>
+          </div>
+        </div>
+      </div>
+      {/* Carousel indicators */}
+      <div className="absolute bottom-6 left-0 right-0 flex justify-center space-x-3">
+        {logisticsImages.map((_, index) => (
+          <button
+            key={index}
+            className={`h-3 rounded-full transition-all ${
+              index === currentImageIndex ? "w-8 bg-white" : "w-3 bg-white/50"
+            }`}
+            onClick={() => setCurrentImageIndex(index)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Map Carousel Component (Updated with animations and larger text)
+const MapCarousel = () => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const mapImages = [
+    {
+      title: "Fleet Overview",
+      description: "Current distribution of delivery vehicles",
+      gradient: "from-blue-600 to-indigo-700",
+      icon: <MapPin className="h-8 w-8 text-white" />,
+    },
+    {
+      title: "Route Analytics",
+      description: "Optimized delivery paths and traffic conditions",
+      gradient: "from-green-600 to-emerald-700",
+      icon: <Navigation className="h-8 w-8 text-white" />,
+    },
+    {
+      title: "Delivery Heatmap",
+      description: "High-demand areas and coverage analysis",
+      gradient: "from-amber-600 to-orange-700",
+      icon: <Truck className="h-8 w-8 text-white" />,
+    },
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % mapImages.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="h-80 rounded-xl relative overflow-hidden shadow-lg">
+      <div className={`absolute inset-0 bg-gradient-to-r ${mapImages[currentImageIndex].gradient} flex items-center justify-center p-6 transition-opacity duration-1000 animate-fade-in`}>
+        <div className="text-white text-center animate-slide-in">
+          <div className="bg-white/20 p-4 rounded-full inline-flex items-center justify-center mb-4 transform transition-transform duration-300 hover:scale-110">
+            {mapImages[currentImageIndex].icon}
+          </div>
+          <h3 className="text-2xl font-bold mb-3">{mapImages[currentImageIndex].title}</h3>
+          <p className="text-base opacity-90 max-w-md">{mapImages[currentImageIndex].description}</p>
+          <div className="mt-6 relative h-16">
+            <div className="absolute top-2 left-1/4 h-3 w-3 bg-white rounded-full animate-ping opacity-75"></div>
+            <div className="absolute bottom-4 right-1/3 h-2 w-2 bg-white rounded-full animate-ping opacity-60" style={{ animationDelay: "0.5s" }}></div>
+            <div className="absolute top-6 right-1/4 h-4 w-4 bg-white rounded-full animate-ping opacity-90" style={{ animationDelay: "1.2s" }}></div>
+            <div className="absolute bottom-2 left-1/3 h-3 w-3 bg-white rounded-full animate-ping opacity-75" style={{ animationDelay: "0.7s" }}></div>
+          </div>
+        </div>
+      </div>
+      <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
+        {mapImages.map((_, index) => (
+          <button
+            key={index}
+            className={`h-2 rounded-full transition-all ${
+              index === currentImageIndex ? "w-6 bg-white" : "w-2 bg-white/50"
+            }`}
+            onClick={() => setCurrentImageIndex(index)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Main Dashboard Component
 const Dashboard = () => {
-  // Demo data
-  const vehicleStatusData = [
-    { name: 'Đang hoạt động', value: 68, color: '#10B981' },
-    { name: 'Đang dừng', value: 15, color: '#F59E0B' },
-    { name: 'Bảo trì', value: 10, color: '#6366F1' },
-    { name: 'Trễ hạn', value: 7, color: '#EF4444' },
-  ];
-
-  const vehicleTypeData = [
-    { name: 'Xe tải lớn', value: 45, color: '#3B82F6' },
-    { name: 'Xe container', value: 20, color: '#8B5CF6' },
-    { name: 'Xe tải nhỏ', value: 25, color: '#EC4899' },
-    { name: 'Xe van', value: 10, color: '#14B8A6' },
-  ];
-
-  const performanceData = [
-    { name: 'T2', onTime: 85, delayed: 15 },
-    { name: 'T3', onTime: 88, delayed: 12 },
-    { name: 'T4', onTime: 82, delayed: 18 },
-    { name: 'T5', onTime: 91, delayed: 9 },
-    { name: 'T6', onTime: 84, delayed: 16 },
-    { name: 'T7', onTime: 78, delayed: 22 },
-    { name: 'CN', onTime: 92, delayed: 8 },
-  ];
-
-  const fuelConsumptionData = [
-    { name: 'T2', liters: 2400 },
-    { name: 'T3', liters: 1980 },
-    { name: 'T4', liters: 2800 },
-    { name: 'T5', liters: 2200 },
-    { name: 'T6', liters: 2500 },
-    { name: 'T7', liters: 1800 },
-    { name: 'CN', liters: 1400 },
-  ];
-
-  const recentAlerts = [
-    { id: 1, message: 'Xe BKS 51H-123.45 bị kẹt xe tại Quận 1', severity: 'high', time: '10 phút trước' },
-    { id: 2, message: 'Xe BKS 59H-789.01 đang trễ hạn giao hàng', severity: 'medium', time: '25 phút trước' },
-    { id: 3, message: 'Xe BKS 61H-246.80 cần bảo trì', severity: 'low', time: '1 giờ trước' },
-  ];
-
+  const [dashboardData, setDashboardData] = useState({
+    totalVehicles: 0,
+    totalDrivers: 0,
+    totalRoutes: 0,
+    completedRoutes: 0,
+    activeRoutes: [],
+    vehicleStatus: { active: 0, inactive: 0 },
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulating data loading
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        const [
+          totalVehicles,
+          totalDrivers,
+          totalRoutes,
+          completedRoutes,
+          activeRoutes,
+          vehicleStats,
+        ] = await Promise.all([
+          dashboardService.getTotalVehicles(),
+          dashboardService.getTotalDrivers(),
+          dashboardService.getTotalRoutes(),
+          dashboardService.getCompletedRoutes(),
+          dashboardService.getActiveRoutes(),
+          dashboardService.getVehicleStats(),
+        ]);
+
+        setDashboardData({
+          totalVehicles,
+          totalDrivers,
+          totalRoutes,
+          completedRoutes,
+          activeRoutes,
+          vehicleStatus: vehicleStats,
+        });
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
   }, []);
 
+  const convertM = (distance) => `${(distance / 1000).toFixed(1)} km`;
+  const formatTime = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `About ${hours}h ${minutes}m`;
+  };
+
+  const vehicleStatusData = [
+    { name: 'Active', value: dashboardData.vehicleStatus.active, color: '#10B981' },
+    { name: 'Inactive', value: dashboardData.vehicleStatus.inactive, color: '#EF4444' },
+  ];
+
   const RADIAN = Math.PI / 180;
-  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
@@ -70,85 +231,60 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="flex items-center justify-center h-screen bg-gray-100">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Dashboard Logistics Realtime</h1>
-        <p className="text-gray-500">Tổng quan hoạt động của đội xe</p>
+    <div className="p-8 bg-gray-100 min-h-screen">
+      <div className="mb-8 animate-slide-in">
+        <h1 className="text-3xl font-bold text-gray-900">Logistics Realtime Dashboard</h1>
+        <p className="text-base text-gray-600 mt-2">Overview of vehicle fleet and driver operations</p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <div className="bg-white rounded-xl shadow-md p-4 border-l-4 border-blue-500 transform transition-all duration-300 hover:scale-105">
-          <div className="flex items-center">
-            <div className="bg-blue-100 rounded-lg p-3">
-              <Truck className="h-6 w-6 text-blue-500" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Tổng phương tiện</p>
-              <p className="text-2xl font-semibold text-gray-800">128</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-md p-4 border-l-4 border-green-500 transform transition-all duration-300 hover:scale-105">
-          <div className="flex items-center">
-            <div className="bg-green-100 rounded-lg p-3">
-              <Zap className="h-6 w-6 text-green-500" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Tỷ lệ đúng hẹn</p>
-              <p className="text-2xl font-semibold text-gray-800">85.7%</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-md p-4 border-l-4 border-purple-500 transform transition-all duration-300 hover:scale-105">
-          <div className="flex items-center">
-            <div className="bg-purple-100 rounded-lg p-3">
-              <Package className="h-6 w-6 text-purple-500" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Hàng đã giao</p>
-              <p className="text-2xl font-semibold text-gray-800">1,248</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {[
+          { icon: Truck, label: 'Total Vehicles', value: dashboardData.totalVehicles, color: 'blue', bg: 'blue-100', border: 'blue-600' },
+          { icon: Users, label: 'Total Drivers', value: dashboardData.totalDrivers, color: 'green', bg: 'green-100', border: 'green-600' },
+          { icon: Package, label: 'Total Trips', value: dashboardData.totalRoutes, color: 'purple', bg: 'purple-100', border: 'purple-600' },
+          { icon: TrendingUp, label: 'Completed Trips', value: dashboardData.completedRoutes, color: 'amber', bg: 'amber-100', border: 'amber-600' },
+        ].map((stat, index) => (
+          <div
+            key={stat.label}
+            className={`bg-white rounded-xl shadow-lg p-5 border-l-4 border-${stat.border} transform transition-all duration-300 hover:scale-105 hover:shadow-xl animate-slide-in`}
+            style={{ animationDelay: `${index * 0.1}s` }}
+          >
+            <div className="flex items-center">
+              <div className={`bg-${stat.bg} rounded-lg p-3`}>
+                <stat.icon className={`h-7 w-7 text-${stat.color}-600`} />
+              </div>
+              <div className="ml-4">
+                <p className="text-base font-medium text-gray-600">{stat.label}</p>
+                <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
+              </div>
             </div>
           </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-md p-4 border-l-4 border-amber-500 transform transition-all duration-300 hover:scale-105">
-          <div className="flex items-center">
-            <div className="bg-amber-100 rounded-lg p-3">
-              <TrendingUp className="h-6 w-6 text-amber-500" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Hiệu suất</p>
-              <p className="text-2xl font-semibold text-gray-800">+12.4%</p>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Pie Charts */}
-        <div className="bg-white rounded-xl shadow-md p-6 transform transition-all duration-500 hover:shadow-lg">
+        <div className="bg-white rounded-xl shadow-lg p-6 transform transition-all duration-500 hover:shadow-xl animate-slide-in">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold text-gray-800 flex items-center">
-              <BarChart2 className="h-5 w-5 mr-2 text-blue-500" />
-              Trạng thái phương tiện
+            <h2 className="text-xl font-bold text-gray-900 flex items-center">
+              <Truck className="h-6 w-6 mr-2 text-blue-600" />
+              Vehicle Status
             </h2>
-            <div className="bg-blue-50 text-blue-700 text-xs font-medium px-3 py-1 rounded-full">
+            <div className="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
               Realtime
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="h-64">
+            <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -157,7 +293,7 @@ const Dashboard = () => {
                     cy="50%"
                     labelLine={false}
                     label={renderCustomizedLabel}
-                    outerRadius={80}
+                    outerRadius={100}
                     fill="#8884d8"
                     dataKey="value"
                   >
@@ -165,201 +301,77 @@ const Dashboard = () => {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="h-64">
+            <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={vehicleTypeData}
+                    data={vehicleStatusData}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
                     label={renderCustomizedLabel}
-                    outerRadius={80}
+                    outerRadius={100}
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {vehicleTypeData.map((entry, index) => (
+                    {vehicleStatusData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex flex-col space-y-2">
+            <div className="flex flex-col space-y-3">
+              <h3 className="font-medium text-gray-700 text-base">Vehicles</h3>
               {vehicleStatusData.map((item) => (
                 <div key={item.name} className="flex items-center">
                   <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: item.color }}></div>
-                  <span className="text-sm text-gray-600">{item.name}</span>
+                  <span className="text-base text-gray-600">{item.name}</span>
                 </div>
               ))}
             </div>
-            <div className="flex flex-col space-y-2">
-              {vehicleTypeData.map((item) => (
+            <div className="flex flex-col space-y-3">
+              <h3 className="font-medium text-gray-700 text-base">Drivers</h3>
+              {vehicleStatusData.map((item) => (
                 <div key={item.name} className="flex items-center">
                   <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: item.color }}></div>
-                  <span className="text-sm text-gray-600">{item.name}</span>
+                  <span className="text-base text-gray-600">{item.name}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Performance Bar Chart */}
-        <div className="bg-white rounded-xl shadow-md p-6 transform transition-all duration-500 hover:shadow-lg">
+        {/* Map Carousel */}
+        <div className="bg-white rounded-xl shadow-lg p-6 transform transition-all duration-500 hover:shadow-xl animate-slide-in">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold text-gray-800 flex items-center">
-              <TrendingUp className="h-5 w-5 mr-2 text-green-500" />
-              Hiệu suất giao hàng theo ngày
+            <h2 className="text-xl font-bold text-gray-900 flex items-center">
+              <TrendingUp className="h-6 w-6 mr-2 text-green-600" />
+              Vehicle Distribution Map
             </h2>
-            <div className="flex space-x-2">
-              <select className="bg-gray-50 border border-gray-200 text-gray-700 py-1 px-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option>Tuần này</option>
-                <option>Tuần trước</option>
-                <option>Tháng này</option>
-              </select>
+            <div className="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full">
+              Realtime
             </div>
           </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={performanceData}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="onTime" name="Đúng giờ" fill="#10B981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="delayed" name="Trễ hẹn" fill="#EF4444" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <MapCarousel />
         </div>
       </div>
 
-      {/* Bottom Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Fuel Consumption */}
-        <div className="bg-white rounded-xl shadow-md p-6 transform transition-all duration-500 hover:shadow-lg">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold text-gray-800 flex items-center">
-              <BarChart2 className="h-5 w-5 mr-2 text-indigo-500" />
-              Tiêu thụ nhiên liệu
-            </h2>
-            <div className="bg-indigo-50 text-indigo-700 text-xs font-medium px-3 py-1 rounded-full">
-              Tuần này
-            </div>
-          </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={fuelConsumptionData}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Line 
-                  type="monotone" 
-                  dataKey="liters" 
-                  name="Lít nhiên liệu"
-                  stroke="#6366F1" 
-                  strokeWidth={2} 
-                  dot={{ fill: '#6366F1', r: 6 }}
-                  activeDot={{ fill: '#4F46E5', r: 8, strokeWidth: 2 }} 
-                />
-              </LineChart>
-            </ResponsiveContainer>
+      {/* New Logistics Image Carousel Section */}
+      <div className="bg-white rounded-xl shadow-lg p-6 transform transition-all duration-500 hover:shadow-xl animate-slide-in mb-8">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+            <Package className="h-7 w-7 mr-3 text-purple-600" />
+            Logistics Highlights
+          </h2>
+          <div className="bg-purple-100 text-purple-800 text-sm font-medium px-4 py-2 rounded-full">
+            Visual Insights
           </div>
         </div>
-
-        {/* Alerts Panel */}
-        <div className="bg-white rounded-xl shadow-md p-6 transform transition-all duration-500 hover:shadow-lg">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold text-gray-800 flex items-center">
-              <AlertTriangle className="h-5 w-5 mr-2 text-amber-500" />
-              Cảnh báo mới nhất
-            </h2>
-            <div className="bg-red-50 text-red-700 text-xs font-medium px-3 py-1 rounded-full">
-              3 mới
-            </div>
-          </div>
-          <div className="space-y-4">
-            {recentAlerts.map((alert) => (
-              <div 
-                key={alert.id} 
-                className={`border-l-4 ${
-                  alert.severity === 'high' ? 'border-red-500 bg-red-50' : 
-                  alert.severity === 'medium' ? 'border-amber-500 bg-amber-50' : 
-                  'border-blue-500 bg-blue-50'
-                } p-3 rounded-lg`}
-              >
-                <div className="flex justify-between">
-                  <p className="font-medium text-gray-800">{alert.message}</p>
-                  <span className="text-xs text-gray-500 whitespace-nowrap">{alert.time}</span>
-                </div>
-              </div>
-            ))}
-            <button className="w-full mt-2 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-lg transition-colors duration-200">
-              Xem tất cả cảnh báo
-            </button>
-          </div>
-        </div>
-
-        {/* Schedule / Calendar */}
-        <div className="bg-white rounded-xl shadow-md p-6 transform transition-all duration-500 hover:shadow-lg">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold text-gray-800 flex items-center">
-              <Calendar className="h-5 w-5 mr-2 text-rose-500" />
-              Lịch trình hôm nay
-            </h2>
-            <div className="bg-rose-50 text-rose-700 text-xs font-medium px-3 py-1 rounded-full">
-              7 Th3, 2025
-            </div>
-          </div>
-          <div className="space-y-4">
-            <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-              <div className="bg-green-100 text-green-600 rounded-lg p-2 w-12 h-12 flex flex-col items-center justify-center">
-                <span className="text-xs font-bold">08:00</span>
-                <Clock className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="font-medium text-gray-800">Xe BKS 51H-123.45 xuất phát</p>
-                <p className="text-sm text-gray-600">Quận 7 → Quận 1</p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-              <div className="bg-indigo-100 text-indigo-600 rounded-lg p-2 w-12 h-12 flex flex-col items-center justify-center">
-                <span className="text-xs font-bold">09:30</span>
-                <Clock className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="font-medium text-gray-800">Xe BKS 59H-789.01 đến kho</p>
-                <p className="text-sm text-gray-600">Nhận hàng tại Kho A</p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-              <div className="bg-amber-100 text-amber-600 rounded-lg p-2 w-12 h-12 flex flex-col items-center justify-center">
-                <span className="text-xs font-bold">13:15</span>
-                <Clock className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="font-medium text-gray-800">Họp đội logistics</p>
-                <p className="text-sm text-gray-600">Báo cáo hiệu suất tuần</p>
-              </div>
-            </div>
-            <button className="w-full mt-2 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-lg transition-colors duration-200">
-              Xem toàn bộ lịch trình
-            </button>
-          </div>
-        </div>
+        <LogisticsImageCarousel />
       </div>
     </div>
   );

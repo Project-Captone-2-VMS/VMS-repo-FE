@@ -10,31 +10,117 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Truck, User, Trash } from "lucide-react";
-import { getAllShipmentItems } from "../../services/apiRequest";
+import { getAllShipmentItems, getAllRoute, getAllWarehouses, deleteShipmentItem } from "../../services/apiRequest";
 import Pagination from "@/components/Pagination";
+import { toast } from "react-hot-toast";
 
 const ShipmentTable = ({ onDelete }) => {
   const [shipmentItems, setShipmentItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [error, setError] = useState(null);
   const itemsPerPage = 10;
+  const [routes, setRoutes] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
 
-  useEffect(() => {
-    fetchShipmentItems();
-  }, []);
-
+  // Update the fetchShipmentItems function
   const fetchShipmentItems = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await getAllShipmentItems();
-      console.log("Fetched shipment items:", data); // Log dữ liệu để kiểm tra
-      setShipmentItems(data);
+      
+      if (!data) {
+        throw new Error('No data received from server');
+      }
+
+      // Validate each item has required fields based on ShipmentItemDTO
+      const validItems = data.filter(item => {
+        const isValid = item && 
+          item.shipmentItemId && 
+          item.shipmentItemName &&
+          typeof item.price === 'number' &&
+          typeof item.quantity === 'number' &&
+          typeof item.warehouseId === 'number' &&
+          typeof item.routeId === 'number';
+          
+        if (!isValid) {
+          console.warn('Invalid item data:', item);
+        }
+        return isValid;
+      });
+
+      setShipmentItems(validItems);
     } catch (error) {
       console.error("Error fetching shipment items:", error);
+      setError(error.message);
+      toast.error(`Failed to load shipment items: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
+
+  // Update the handleDelete function
+  const handleDelete = async (id) => {
+    try {
+      await deleteShipmentItem(id);
+      toast.success('Shipment item deleted successfully');
+      await fetchShipmentItems(); // Refresh the list after successful deletion
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error(error.message);
+    }
+  };
+
+  // Add refreshing on mount and periodically
+  useEffect(() => {
+    const fetchAllData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const [shipmentData, routeData, warehouseData] = await Promise.all([
+          getAllShipmentItems(),
+          getAllRoute(),
+          getAllWarehouses()
+        ]);
+        console.log('shipmentData:', shipmentData);
+        setRoutes(routeData);
+        setWarehouses(warehouseData);
+
+        const validItems = shipmentData.filter(item => {
+          const isValid = item &&
+            item.shipmentItemId &&
+            item.shipmentItemName &&
+            typeof item.price === 'number' &&
+            typeof item.quantity === 'number' &&
+            typeof item.warehouseId === 'number' &&
+            typeof item.routeId === 'number';
+          return isValid;
+        });
+        setShipmentItems(validItems);
+      } catch (error) {
+        setError(error.message);
+        toast.error(`Failed to load data: ${error.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllData();
+    const interval = setInterval(fetchAllData, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Thêm hàm format tiền tệ
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
+  };
+
+  const getRouteById = (id) => routes.find(r => r.routeId === id);
+  const getWarehouseById = (id) => warehouses.find(w => w.warehouseId === id);
 
   const totalPages = Math.ceil(shipmentItems.length / itemsPerPage);
   const paginatedItems = shipmentItems.slice(
@@ -42,15 +128,22 @@ const ShipmentTable = ({ onDelete }) => {
     currentPage * itemsPerPage
   );
 
-  // Hàm định dạng thời gian (totalTime tính theo giây)
-  const formatTime = (seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `About ${hours}h ${minutes}m`;
-  };
+  if (error) {
+    return (
+      <div className="text-center text-red-600 p-4">
+        Error: {error}
+        <Button
+          onClick={fetchShipmentItems}
+          className="ml-2 bg-blue-500 hover:bg-blue-600"
+        >
+          Retry
+        </Button>
+      </div>
+    );
+  }
 
   return (
-    <div>
+    <div className="space-y-4">
       <Table>
         <TableHeader>
           <TableRow>
@@ -65,104 +158,78 @@ const ShipmentTable = ({ onDelete }) => {
           {loading ? (
             <TableRow>
               <TableCell colSpan={5} className="text-center">
-                Loading...
+                <div className="flex justify-center items-center space-x-2">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                  <span>Loading...</span>
+                </div>
               </TableCell>
             </TableRow>
           ) : paginatedItems.length > 0 ? (
             paginatedItems.map((item) => {
-              // Lấy thông tin qua dot-notation
-              const shipmentItemId = item.shipmentItemId;
-              const shipmentItemName = item.shipmentItemName;
-              const price = item.price;
-              const quantity = item.quantity;
-              const status = item.status;
-              const routeId = item.route?.routeId ?? "N/A";
-              const startLocationName = item.route?.startLocationName ?? "N/A";
-              const endLocationName = item.route?.endLocationName ?? "N/A";
-              const totalTime = item.route?.totalTime;
-              const driverFirstName = item.route?.driver?.firstName ?? "";
-              const driverLastName = item.route?.driver?.lastName ?? "";
-              const licensePlate = item.route?.vehicle?.licensePlate ?? "N/A";
-
-              console.log("Route details for item:", item.route); // Log dữ liệu route để kiểm tra
-
+              const route = getRouteById(item.routeId);
+              const warehouse = getWarehouseById(item.warehouseId);
               return (
-                <TableRow key={shipmentItemId}>
-                  {/* Route Details */}
+                <TableRow key={item.shipmentItemId}>
                   <TableCell>
                     <div className="flex flex-col space-y-1">
                       <div className="text-sm">
-                        <strong>From:</strong> {startLocationName}
+                        <strong>From:</strong> {route?.startLocationName || 'N/A'}
                       </div>
                       <div className="text-sm">
-                        <strong>To:</strong> {endLocationName}
+                        <strong>To:</strong> {route?.endLocationName || 'N/A'}
                       </div>
                       <div className="text-sm">
-                        <strong>Route ID:</strong> {routeId}
+                        <strong>Route ID:</strong> {route?.routeId || 'N/A'}
                       </div>
                     </div>
                   </TableCell>
-
-                  {/* Driver / Vehicle */}
                   <TableCell>
-                    <div className="flex flex-col space-y-1">
+                    <div className="flex flex-col space-y-2">
                       <div className="flex items-center text-sm">
-                        <User className="h-4 w-4 mr-1" />
+                        <User className="h-4 w-4 mr-2 text-gray-500" />
                         <span>
-                          {driverFirstName} {driverLastName}
+                          {route?.driver
+                            ? `${route.driver.firstName} ${route.driver.lastName}`
+                            : 'No Driver Assigned'}
                         </span>
                       </div>
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Truck className="h-4 w-4 mr-1" />
-                        <span>{licensePlate}</span>
+                      <div className="flex items-center text-sm">
+                        <Truck className="h-4 w-4 mr-2 text-gray-500" />
+                        <span>{route?.vehicle?.licensePlate || 'No Vehicle Assigned'}</span>
                       </div>
                     </div>
                   </TableCell>
-
-                  {/* Item Details */}
                   <TableCell>
-                    <div className="flex flex-col gap-2">
-                      <div className="border-b pb-2 last:border-0">
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium text-gray-700">
-                            {shipmentItemName}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center mt-1">
-                          <span className="text-sm text-gray-600">
-                            Quantity: {quantity}
-                          </span>
-                          <span className="text-sm text-gray-600">
-                            Price: ${price.toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="text-right text-sm text-blue-600 mt-1">
-                          Subtotal: ${(price * quantity).toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-                  </TableCell>
-
-                  {/* Route Info */}
-                  <TableCell>
-                    <div className="flex flex-col space-y-1">
-                      <div>
-                        <Badge variant={status ? "success" : "secondary"}>
-                          {status ? "Completed" : "Pending"}
-                        </Badge>
+                    <div className="space-y-2">
+                      <div className="font-medium">{item.shipmentItemName}</div>
+                      <div className="text-sm text-gray-600">
+                        Quantity: {item.quantity}
                       </div>
                       <div className="text-sm text-gray-600">
-                        {totalTime ? formatTime(totalTime) : ""}
+                        Price: {formatCurrency(item.price)}
+                      </div>
+                      <div className="text-sm font-medium text-blue-600">
+                        Total: {formatCurrency(item.price * item.quantity)}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        Warehouse: {warehouse?.warehouseName || item.warehouseId}
                       </div>
                     </div>
                   </TableCell>
-
-                  {/* Actions */}
+                  <TableCell>
+                    <Badge
+                      variant={item.status ? "success" : "secondary"}
+                      className="mb-2"
+                    >
+                      {item.status ? "Completed" : "Pending"}
+                    </Badge>
+                  </TableCell>
                   <TableCell>
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => onDelete(shipmentItemId)}
+                      onClick={() => handleDelete(item.shipmentItemId)}
+                      className="hover:bg-red-700"
                     >
                       <Trash className="h-4 w-4" />
                     </Button>
@@ -172,23 +239,25 @@ const ShipmentTable = ({ onDelete }) => {
             })
           ) : (
             <TableRow>
-              <TableCell colSpan={5} className="text-center">
-                No shipment items found.
+              <TableCell colSpan={5} className="text-center py-8">
+                No shipment items found
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
 
-      <div className="mt-4">
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          itemsPerPage={itemsPerPage}
-          totalItems={shipmentItems.length}
-          onPageChange={setCurrentPage}
-        />
-      </div>
+      {paginatedItems.length > 0 && (
+        <div className="mt-4">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            itemsPerPage={itemsPerPage}
+            totalItems={shipmentItems.length}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
     </div>
   );
 };

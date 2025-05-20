@@ -141,26 +141,47 @@ const AllocationProduct = () => {
     return hasWarehouse && hasRoute && hasValidAllocations;
   };
 
+  const validateAllocation = (allocation) => {
+    if (!allocation.productName) {
+      throw new Error('Product name is required');
+    }
+    if (!allocation.quantity || allocation.quantity <= 0) {
+      throw new Error('Quantity must be greater than 0');
+    }
+    if (!allocation.price || allocation.price <= 0) {
+      throw new Error('Price must be greater than 0');
+    }
+    return true;
+  };
+
   const handleSubmitAllocation = async () => {
     try {
       setIsSubmitting(true);
+      
+      // Validate all allocations first
+      allocations.forEach(allocation => {
+        validateAllocation(allocation);
+      });
+
+      // Proceed with submission
       const itemPromises = allocations.map(allocation => {
         const itemRequest = {
           shipmentItemName: allocation.productName,
           price: parseFloat(allocation.price),
           quantity: parseInt(allocation.quantity),
-          warehouse: { warehouseId: parseInt(selectedWarehouse) },
-          route: { routeId: parseInt(selectedRoute) }
+          warehouseId: parseInt(selectedWarehouse),
+          routeId: parseInt(selectedRoute),
+          status: false
         };
         return createShipmentItem(itemRequest);
       });
-  
+
       await Promise.all(itemPromises);
-      toast.success("Shipment item(s) created successfully");
+      toast.success("Shipment items created successfully");
       navigate('/shipment');
     } catch (error) {
       console.error('Submit error:', error);
-      toast.error("Failed to create shipment item(s)");
+      toast.error(error.message);
     } finally {
       setIsSubmitting(false);
     }
