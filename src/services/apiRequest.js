@@ -651,17 +651,20 @@ export const dashboardService = {
 
 export const getAllShipmentItems = async () => {
   try {
-    const response = await axios.get('/api/shipment-items/findAll');
-    return response.data;
+    const response = await api.get('shipment-items/findAll');
+    return response.data.result || response.data; // Thêm .result để phòng trường hợp data được wrap
   } catch (error) {
-    throw new Error(error.response?.data?.message || 'Failed to fetch shipment items');
+    console.error('Error fetching shipment items:', error.response?.data || error);
+    throw error;
   }
 };
 
 export const deleteShipmentItem = async (id) => {
   try {
-    await axios.delete(`/api/shipment-items/delete/${id}`);
+    const response = await api.delete(`shipment-items/delete/${id}`);
+    return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || 'Failed to delete shipment item');
+    console.error('Error deleting shipment item:', error.response?.data || error);
+    throw error;
   }
 };
