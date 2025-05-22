@@ -68,7 +68,7 @@ const Route = () => {
   const [warehouseLocations, setWarehouseLocations] = useState([]);
   const [customOrigin, setCustomOrigin] = useState("");
   const [customDestination, setCustomDestination] = useState("");
-  const [destinationSuggestions, setDestinationSuggestions] = useState([]); // State cho gợi ý điểm đến
+  const [destinationSuggestions, setDestinationSuggestions] = useState([]);
 
   const routePolylines = useRef([]);
   const markers = useRef([]);
@@ -237,7 +237,6 @@ const Route = () => {
     }
   };
 
-  // Hàm tìm kiếm gợi ý địa điểm sử dụng HERE API
   const fetchDestinationSuggestions = async (query) => {
     if (!query || query.length < 3) {
       setDestinationSuggestions([]);
@@ -248,9 +247,9 @@ const Route = () => {
       const response = await axios.get("https://autosuggest.search.hereapi.com/v1/autosuggest", {
         params: {
           q: query,
-          at: "16.0583,108.2210", // Vị trí trung tâm để tìm kiếm (có thể thay đổi)
-          limit: 3, // Giới hạn số gợi ý trả về
-          lang: "vi-VN", // Ngôn ngữ (có thể thay đổi)
+          at: "16.0583,108.2210",
+          limit: 3,
+          lang: "vi-VN",
           apiKey: apiKey,
         },
       });
@@ -266,7 +265,8 @@ const Route = () => {
     }
   };
 
-  const fetchRoute = async (originCoords, destinationCoords) => {
+  // Updated fetchRoute to include waypoints
+  const fetchRoute = async (originCoords, destinationCoords, waypoints = []) => {
     setLoading(true);
     setError(null);
     try {
@@ -275,19 +275,26 @@ const Route = () => {
       markers.current.forEach((marker) => map.removeObject(marker));
       markers.current = [];
 
-      const response = await axios.get("https://router.hereapi.com/v8/routes", {
-        params: {
-          origin: `${originCoords.lat},${originCoords.lng}`,
-          destination: `${destinationCoords.lat},${destinationCoords.lng}`,
-          transportMode: "car",
-          alternatives: 2,// Số lượng tuyến đường thay thế
-          return: "polyline,summary",
-          apikey: apiKey,
-        },
-      });
+      let params = {
+        origin: `${originCoords.lat},${originCoords.lng}`,
+        destination: `${destinationCoords.lat},${destinationCoords.lng}`,
+        transportMode: "car",
+        alternatives: 2,
+        return: "polyline,summary",
+        apikey: apiKey,
+      };
+
+      // Add waypoints if provided
+      if (waypoints.length > 0) {
+        const via = waypoints.map((coord) => `${coord.lat},${coord.lng}`).join(";");
+        params.via = via;
+      }
+
+      const response = await axios.get("https://router.hereapi.com/v8/routes", { params });
 
       if (response.data.routes && response.data.routes.length > 0) {
-        const routesData = response.data.routes.slice(0, 3);// Giới hạn số lượng tuyến đường hiển thị
+        const routesData = response.data.routes.slice(0, 3);
+        console.log("routesData",routesData);
         setRoutes(routesData);
 
         let minIndex = 0;
@@ -298,6 +305,7 @@ const Route = () => {
             minIndex = i;
           }
         }
+        console.log("minIndex",minIndex);
         setSelectedRouteIndex(minIndex);
 
         routesData.forEach((route, index) => {
@@ -318,8 +326,11 @@ const Route = () => {
 
         const originMarker = new H.map.Marker({ lat: originCoords.lat, lng: originCoords.lng });
         const destinationMarker = new H.map.Marker({ lat: destinationCoords.lat, lng: destinationCoords.lng });
-        map.addObjects([originMarker, destinationMarker]);
-        markers.current.push(originMarker, destinationMarker);
+        const waypointMarkers = waypoints.map(
+          (coord) => new H.map.Marker({ lat: coord.lat, lng: coord.lng })
+        );
+        map.addObjects([originMarker, destinationMarker, ...waypointMarkers]);
+        markers.current.push(originMarker, destinationMarker, ...waypointMarkers);
       } else {
         setError("No routes found.");
       }
@@ -352,6 +363,7 @@ const Route = () => {
     setSelectedCoordinates([]);
   };
 
+  // Updated handleFindSequence to include polyline
   const handleFindSequence = async () => {
     if (!validateDateTime()) return;
     if (selectedCoordinates.length < 2) {
@@ -362,6 +374,12 @@ const Route = () => {
       setError("Please select both date and time for the route.");
       return;
     }
+    // Ensure a route has been fetched
+    if (routes.length === 0 || !routes[selectedRouteIndex]) {
+      setError("Please fetch a route first by clicking 'Get Route'.");
+      return;
+    }
+
     const formatDate = (dateString) => {
       const date = new Date(dateString);
       const day = String(date.getDate()).padStart(2, "0");
@@ -374,6 +392,11 @@ const Route = () => {
       const destinationCoords = await geocode(destination);
       const destinations = selectedCoordinates.map((coord) => `${coord.lat},${coord.lng}`).join(",");
 
+      // Lấy polyline từ route đã chọn
+      const selectedRoute = routes[selectedRouteIndex];
+      console.log("select ",selectedRoute )
+      const selectedPolyline = selectedRoute.sections[0].polyline;
+     console.log("select ",selectedPolyline )
       const formData = {
         startLat: originCoords.lat,
         startLng: originCoords.lng,
@@ -384,6 +407,7 @@ const Route = () => {
         vehicleId: selectedVehicle,
         startDate: formatDate(routeDate),
         startTime: `${routeTime}:00`,
+        polyline: selectedPolyline, 
       };
 
       const headers = {
@@ -399,20 +423,19 @@ const Route = () => {
         stompClient.disconnect(() => {
           console.log("Đã ngắt kết nối socket cũ!");
         });
-      } else {
-        socket = new SockJS("http://localhost:8080/ws");
-        stompClient = over(socket);
-        stompClient.connect({}, () => {
-          stompClient.send(
-            `/app/chat/${findUserNameByDriverId}`,
-            {},
-            JSON.stringify(formDataSendNotification)
-          );
-          toast.success("Successfully created!");
-          console.log("Notification Sent:", formDataSendNotification);
-          window.location.reload();
-        });
       }
+      socket = new SockJS("http://localhost:8080/ws");
+      stompClient = over(socket);
+      stompClient.connect({}, () => {
+        stompClient.send(
+          `/app/chat/${findUserNameByDriverId}`,
+          {},
+          JSON.stringify(formDataSendNotification)
+        );
+        toast.success("Successfully created!");
+        console.log("Notification Sent:", formDataSendNotification);
+        //window.location.reload();
+      });
       resetForm();
     } catch (error) {
       if (error.response && error.response.data) {
@@ -430,7 +453,7 @@ const Route = () => {
     try {
       const originCoords = await geocode(origin);
       const destinationCoords = await geocode(destination);
-      await fetchRoute(originCoords, destinationCoords);
+      await fetchRoute(originCoords, destinationCoords, selectedCoordinates);
     } catch (error) {
       setError("Failed to geocode location. Please check the addresses.");
     } finally {
@@ -508,7 +531,7 @@ const Route = () => {
                     }}
                     onSearch={(value) => {
                       setCustomDestination(value);
-                      fetchDestinationSuggestions(value); // Gọi API tìm kiếm gợi ý
+                      fetchDestinationSuggestions(value);
                     }}
                     showSearch
                     allowClear
@@ -535,14 +558,15 @@ const Route = () => {
                               </div>
                             </Option>
                           ))}
-                    {customDestination && !destinationSuggestions.some(sug => sug.title === customDestination) && (
-                      <Option key="custom" value={customDestination}>
-                        <div className="flex items-center">
-                          <span className="mr-2">📍</span>
-                          <span>{customDestination}</span>
-                        </div>
-                      </Option>
-                    )}
+                    {customDestination &&
+                      !destinationSuggestions.some((sug) => sug.title === customDestination) && (
+                        <Option key="custom" value={customDestination}>
+                          <div className="flex items-center">
+                            <span className="mr-2">📍</span>
+                            <span>{customDestination}</span>
+                          </div>
+                        </Option>
+                      )}
                   </Select>
                 </label>
               </div>
@@ -692,7 +716,9 @@ const Route = () => {
                 <td className="px-6 py-4">{route.endLocationName}</td>
                 <td className="px-6 py-4">{formatTime(route.totalTime)}</td>
                 <td className="px-6 py-4">{convertM(route.totalDistance)}</td>
-                <td className="px-6 py-4">{route.driverId} {route.driver?.firstName || ""} {route.driver?.lastName || ""}</td>
+                <td className="px-6 py-4">
+                  {route.driverId} {route.driver?.firstName || ""} {route.driver?.lastName || ""}
+                </td>
                 <td className="px-6 py-4">{route.vehicle?.licensePlate || ""}</td>
                 <td className="px-6 py-4">{new Date(route.routeDate).toLocaleDateString()}</td>
                 <td className="px-6 py-4">{route.startTime}</td>
