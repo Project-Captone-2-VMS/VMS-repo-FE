@@ -44,7 +44,7 @@ const Route = () => {
   const totalPages = Math.ceil(filteredRoutes.length / itemsPerPage);
   const paginatedRoutes = filteredRoutes.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
@@ -114,10 +114,10 @@ const Route = () => {
       mapRef.current,
       defaultLayers.vector.normal.map,
       {
-        center: { lat: 16.0583, lng: 108.2210 },
+        center: { lat: 16.0583, lng: 108.221 },
         zoom: 14,
         pixelRatio: window.devicePixelRatio || 1,
-      }
+      },
     );
 
     new H.mapevents.Behavior(new H.mapevents.MapEvents(mapInstance));
@@ -127,16 +127,22 @@ const Route = () => {
     mapInstance.addEventListener("tap", async function (evt) {
       const coord = mapInstance.screenToGeo(
         evt.currentPointer.viewportX,
-        evt.currentPointer.viewportY
+        evt.currentPointer.viewportY,
       );
-      const clickedMarker = new H.map.Marker({ lat: coord.lat, lng: coord.lng });
+      const clickedMarker = new H.map.Marker({
+        lat: coord.lat,
+        lng: coord.lng,
+      });
       mapInstance.addObject(clickedMarker);
       markers.current.push(clickedMarker);
 
       const address = await convertGeocode(coord.lat, coord.lng);
       const addressText = address ? address.label : "Địa chỉ không tìm thấy";
       setTextareaValue((prev) => prev + addressText + "\n");
-      setSelectedCoordinates((prev) => [...prev, { lat: coord.lat, lng: coord.lng }]);
+      setSelectedCoordinates((prev) => [
+        ...prev,
+        { lat: coord.lat, lng: coord.lng },
+      ]);
     });
 
     return () => {
@@ -167,9 +173,13 @@ const Route = () => {
             lang: "en-US",
             apiKey: apiKey,
           },
-        }
+        },
       );
-      if (response.data && response.data.items && response.data.items.length > 0) {
+      if (
+        response.data &&
+        response.data.items &&
+        response.data.items.length > 0
+      ) {
         const addr = response.data.items[0].address;
         return {
           street: addr.street || "",
@@ -202,7 +212,9 @@ const Route = () => {
     const lines = value.split("\n").filter((line) => line.trim() !== "");
     const newCoordinates = [];
     lines.forEach((line) => {
-      const matches = line.match(/([-+]?[0-9]*\.?[0-9]+),\s*([-+]?[0-9]*\.?[0-9]+)/);
+      const matches = line.match(
+        /([-+]?[0-9]*\.?[0-9]+),\s*([-+]?[0-9]*\.?[0-9]+)/,
+      );
       if (matches) {
         const lat = parseFloat(matches[1]);
         const lng = parseFloat(matches[2]);
@@ -220,19 +232,25 @@ const Route = () => {
       throw new Error("Invalid address. Please enter a valid address.");
     }
     try {
-      const response = await axios.get("https://geocode.search.hereapi.com/v1/geocode", {
-        params: {
-          q: address,
-          apikey: apiKey,
+      const response = await axios.get(
+        "https://geocode.search.hereapi.com/v1/geocode",
+        {
+          params: {
+            q: address,
+            apikey: apiKey,
+          },
         },
-      });
+      );
       if (response.data.items && response.data.items.length > 0) {
         return response.data.items[0].position;
       } else {
         throw new Error("No location found");
       }
     } catch (error) {
-      console.error("Geocode error:", error.response ? error.response.data : error.message);
+      console.error(
+        "Geocode error:",
+        error.response ? error.response.data : error.message,
+      );
       throw error;
     }
   };
@@ -244,15 +262,18 @@ const Route = () => {
     }
 
     try {
-      const response = await axios.get("https://autosuggest.search.hereapi.com/v1/autosuggest", {
-        params: {
-          q: query,
-          at: "16.0583,108.2210",
-          limit: 3,
-          lang: "vi-VN",
-          apiKey: apiKey,
+      const response = await axios.get(
+        "https://autosuggest.search.hereapi.com/v1/autosuggest",
+        {
+          params: {
+            q: query,
+            at: "16.0583,108.2210",
+            limit: 3,
+            lang: "vi-VN",
+            apiKey: apiKey,
+          },
         },
-      });
+      );
 
       if (response.data.items && response.data.items.length > 0) {
         setDestinationSuggestions(response.data.items);
@@ -266,7 +287,11 @@ const Route = () => {
   };
 
   // Updated fetchRoute to include waypoints
-  const fetchRoute = async (originCoords, destinationCoords, waypoints = []) => {
+  const fetchRoute = async (
+    originCoords,
+    destinationCoords,
+    waypoints = [],
+  ) => {
     setLoading(true);
     setError(null);
     try {
@@ -286,15 +311,19 @@ const Route = () => {
 
       // Add waypoints if provided
       if (waypoints.length > 0) {
-        const via = waypoints.map((coord) => `${coord.lat},${coord.lng}`).join(";");
+        const via = waypoints
+          .map((coord) => `${coord.lat},${coord.lng}`)
+          .join(";");
         params.via = via;
       }
 
-      const response = await axios.get("https://router.hereapi.com/v8/routes", { params });
+      const response = await axios.get("https://router.hereapi.com/v8/routes", {
+        params,
+      });
 
       if (response.data.routes && response.data.routes.length > 0) {
         const routesData = response.data.routes.slice(0, 3);
-        console.log("routesData",routesData);
+        console.log("routesData", routesData);
         setRoutes(routesData);
 
         let minIndex = 0;
@@ -305,14 +334,15 @@ const Route = () => {
             minIndex = i;
           }
         }
-        console.log("minIndex",minIndex);
+        console.log("minIndex", minIndex);
         setSelectedRouteIndex(minIndex);
 
         routesData.forEach((route, index) => {
           const section = route.sections[0];
           const polylineData = section.polyline;
           const routeLine = H.geo.LineString.fromFlexiblePolyline(polylineData);
-          const strokeColor = index === minIndex ? "red" : index === 0 ? "blue" : "green";
+          const strokeColor =
+            index === minIndex ? "red" : index === 0 ? "blue" : "green";
           const routePolyline = new H.map.Polyline(routeLine, {
             style: { strokeColor, lineWidth: 5 },
           });
@@ -320,17 +350,29 @@ const Route = () => {
           routePolylines.current.push(routePolyline);
 
           if (index === minIndex) {
-            map.getViewModel().setLookAtData({ bounds: routePolyline.getBoundingBox() });
+            map
+              .getViewModel()
+              .setLookAtData({ bounds: routePolyline.getBoundingBox() });
           }
         });
 
-        const originMarker = new H.map.Marker({ lat: originCoords.lat, lng: originCoords.lng });
-        const destinationMarker = new H.map.Marker({ lat: destinationCoords.lat, lng: destinationCoords.lng });
+        const originMarker = new H.map.Marker({
+          lat: originCoords.lat,
+          lng: originCoords.lng,
+        });
+        const destinationMarker = new H.map.Marker({
+          lat: destinationCoords.lat,
+          lng: destinationCoords.lng,
+        });
         const waypointMarkers = waypoints.map(
-          (coord) => new H.map.Marker({ lat: coord.lat, lng: coord.lng })
+          (coord) => new H.map.Marker({ lat: coord.lat, lng: coord.lng }),
         );
         map.addObjects([originMarker, destinationMarker, ...waypointMarkers]);
-        markers.current.push(originMarker, destinationMarker, ...waypointMarkers);
+        markers.current.push(
+          originMarker,
+          destinationMarker,
+          ...waypointMarkers,
+        );
       } else {
         setError("No routes found.");
       }
@@ -390,13 +432,15 @@ const Route = () => {
     try {
       const originCoords = await geocode(origin);
       const destinationCoords = await geocode(destination);
-      const destinations = selectedCoordinates.map((coord) => `${coord.lat},${coord.lng}`).join(",");
+      const destinations = selectedCoordinates
+        .map((coord) => `${coord.lat},${coord.lng}`)
+        .join(",");
 
       // Lấy polyline từ route đã chọn
       const selectedRoute = routes[selectedRouteIndex];
-      console.log("select ",selectedRoute )
+      console.log("select ", selectedRoute);
       const selectedPolyline = selectedRoute.sections[0].polyline;
-     console.log("select ",selectedPolyline )
+      console.log("select ", selectedPolyline);
       const formData = {
         startLat: originCoords.lat,
         startLng: originCoords.lng,
@@ -407,7 +451,7 @@ const Route = () => {
         vehicleId: selectedVehicle,
         startDate: formatDate(routeDate),
         startTime: `${routeTime}:00`,
-        polyline: selectedPolyline, 
+        polyline: selectedPolyline,
       };
 
       const headers = {
@@ -417,7 +461,9 @@ const Route = () => {
       const results = await findSequence({ ...formData, headers });
       console.log("results", results);
 
-      const findUserNameByDriverId = await getUsernameByDriverId(formData.driverId);
+      const findUserNameByDriverId = await getUsernameByDriverId(
+        formData.driverId,
+      );
       console.log("findUserNameByDriverId", findUserNameByDriverId);
       if (stompClient !== null && stompClient.connected) {
         stompClient.disconnect(() => {
@@ -430,7 +476,7 @@ const Route = () => {
         stompClient.send(
           `/app/chat/${findUserNameByDriverId}`,
           {},
-          JSON.stringify(formDataSendNotification)
+          JSON.stringify(formDataSendNotification),
         );
         toast.success("Successfully created!");
         console.log("Notification Sent:", formDataSendNotification);
@@ -466,7 +512,11 @@ const Route = () => {
       routePolylines.current.forEach((polyline, index) => {
         polyline.setStyle({
           strokeColor:
-            index.toString() === selectedRouteIndex.toString() ? "red" : index === 0 ? "blue" : "green",
+            index.toString() === selectedRouteIndex.toString()
+              ? "red"
+              : index === 0
+                ? "blue"
+                : "green",
           lineWidth: 5,
         });
       });
@@ -482,7 +532,10 @@ const Route = () => {
           style={{ width: "71%", height: "700px" }}
           ref={mapRef}
         ></div>
-        <div className="gap-3 rounded-lg border bg-white px-3 py-2" style={{ width: "28%" }}>
+        <div
+          className="gap-3 rounded-lg border bg-white px-3 py-2"
+          style={{ width: "28%" }}
+        >
           <div className="form-container">
             <h2 className="mb-4 text-2xl font-bold">Route on HERE Map</h2>
             <form onSubmit={handleSubmit} className="mb-4">
@@ -507,7 +560,10 @@ const Route = () => {
                     filterOption={false}
                   >
                     {warehouseLocations.map((warehouse) => (
-                      <Option key={warehouse.warehouseId} value={warehouse.location}>
+                      <Option
+                        key={warehouse.warehouseId}
+                        value={warehouse.location}
+                      >
                         {warehouse.warehouseName} - {warehouse.location}
                       </Option>
                     ))}
@@ -551,15 +607,23 @@ const Route = () => {
                       : warehouseLocations
                           .filter((warehouse) => warehouse.location !== origin)
                           .map((warehouse) => (
-                            <Option key={warehouse.warehouseId} value={warehouse.location}>
+                            <Option
+                              key={warehouse.warehouseId}
+                              value={warehouse.location}
+                            >
                               <div className="flex items-center">
                                 <span className="mr-2">📍</span>
-                                <span>{warehouse.warehouseName} - {warehouse.location}</span>
+                                <span>
+                                  {warehouse.warehouseName} -{" "}
+                                  {warehouse.location}
+                                </span>
                               </div>
                             </Option>
                           ))}
                     {customDestination &&
-                      !destinationSuggestions.some((sug) => sug.title === customDestination) && (
+                      !destinationSuggestions.some(
+                        (sug) => sug.title === customDestination,
+                      ) && (
                         <Option key="custom" value={customDestination}>
                           <div className="flex items-center">
                             <span className="mr-2">📍</span>
@@ -645,7 +709,9 @@ const Route = () => {
                     Select Route:
                     <select
                       value={selectedRouteIndex}
-                      onChange={(e) => setSelectedRouteIndex(parseInt(e.target.value))}
+                      onChange={(e) =>
+                        setSelectedRouteIndex(parseInt(e.target.value))
+                      }
                       className="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-300"
                     >
                       {routes.map((route, index) => {
@@ -662,8 +728,13 @@ const Route = () => {
                   </label>
                 </div>
               )}
-              <div className="w-full" style={{ width: "100%", padding: "10px" }}>
-                <h3 className="text-lg font-semibold">Coordinate Information</h3>
+              <div
+                className="w-full"
+                style={{ width: "100%", padding: "10px" }}
+              >
+                <h3 className="text-lg font-semibold">
+                  Coordinate Information
+                </h3>
                 <textarea
                   value={textareaValue}
                   onChange={handleTextareaChange}
@@ -694,36 +765,67 @@ const Route = () => {
       </div>
 
       <div className="relative mt-2 overflow-x-auto bg-white p-4 shadow-md sm:rounded-lg">
-        <h2 className="mb-4 text-lg font-bold text-slate-950">Information List Route</h2>
+        <h2 className="mb-4 text-lg font-bold text-slate-950">
+          Information List Route
+        </h2>
         <table className="w-full rounded-lg text-left text-sm font-normal text-black">
           <thead className="bg-gray-50 text-xs uppercase text-black">
             <tr>
-              <th scope="col" className="px-6 py-3">Start</th>
-              <th scope="col" className="px-6 py-3">End</th>
-              <th scope="col" className="px-6 py-3">Time</th>
-              <th scope="col" className="px-6 py-3">Distance</th>
-              <th scope="col" className="px-6 py-3">Fullname Driver</th>
-              <th scope="col" className="px-6 py-3">License Plate</th>
-              <th scope="col" className="px-6 py-3">Date</th>
-              <th scope="col" className="px-6 py-3">Time</th>
-              <th scope="col" className="px-6 py-3">Action</th>
+              <th scope="col" className="px-6 py-3">
+                Start
+              </th>
+              <th scope="col" className="px-6 py-3">
+                End
+              </th>
+              <th scope="col" className="px-6 py-3">
+                Time
+              </th>
+              <th scope="col" className="px-6 py-3">
+                Distance
+              </th>
+              <th scope="col" className="px-6 py-3">
+                Fullname Driver
+              </th>
+              <th scope="col" className="px-6 py-3">
+                License Plate
+              </th>
+              <th scope="col" className="px-6 py-3">
+                Date
+              </th>
+              <th scope="col" className="px-6 py-3">
+                Time
+              </th>
+              <th scope="col" className="px-6 py-3">
+                Action
+              </th>
             </tr>
           </thead>
           <tbody>
             {paginatedRoutes.map((route) => (
-              <tr key={route.routeId} className="border-b bg-white hover:bg-gray-50">
+              <tr
+                key={route.routeId}
+                className="border-b bg-white hover:bg-gray-50"
+              >
                 <td className="px-6 py-4">{route.startLocationName}</td>
                 <td className="px-6 py-4">{route.endLocationName}</td>
                 <td className="px-6 py-4">{formatTime(route.totalTime)}</td>
                 <td className="px-6 py-4">{convertM(route.totalDistance)}</td>
                 <td className="px-6 py-4">
-                  {route.driverId} {route.driver?.firstName || ""} {route.driver?.lastName || ""}
+                  {route.driverId} {route.driver?.firstName || ""}{" "}
+                  {route.driver?.lastName || ""}
                 </td>
-                <td className="px-6 py-4">{route.vehicle?.licensePlate || ""}</td>
-                <td className="px-6 py-4">{new Date(route.routeDate).toLocaleDateString()}</td>
+                <td className="px-6 py-4">
+                  {route.vehicle?.licensePlate || ""}
+                </td>
+                <td className="px-6 py-4">
+                  {new Date(route.routeDate).toLocaleDateString()}
+                </td>
                 <td className="px-6 py-4">{route.startTime}</td>
                 <td className="px-2 py-4">
-                  <Button type="link" onClick={() => handleViewDetails(route.routeId)}>
+                  <Button
+                    type="link"
+                    onClick={() => handleViewDetails(route.routeId)}
+                  >
                     Detail
                   </Button>
                 </td>
@@ -760,17 +862,25 @@ const Route = () => {
                 <h3 className="mb-4 text-lg font-semibold">Route Overview</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <h4 className="text-sm font-medium text-gray-500">Total Distance</h4>
-                    <p className="text-lg text-black">{selectedRouteDetails.route?.routeId} meters</p>
+                    <h4 className="text-sm font-medium text-gray-500">
+                      Total Distance
+                    </h4>
+                    <p className="text-lg text-black">
+                      {selectedRouteDetails.route?.routeId} meters
+                    </p>
                   </div>
                   <div>
-                    <h4 className="text-sm font-medium text-gray-500">Total Time</h4>
+                    <h4 className="text-sm font-medium text-gray-500">
+                      Total Time
+                    </h4>
                     <p className="text-lg"></p>
                   </div>
                 </div>
               </div>
               <div className="mt-4 rounded-lg bg-gray-200 p-4">
-                <h3 className="mb-4 text-lg font-semibold">Assignment Details</h3>
+                <h3 className="mb-4 text-lg font-semibold">
+                  Assignment Details
+                </h3>
               </div>
             </div>
           )}
@@ -779,27 +889,46 @@ const Route = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-2 text-xs font-medium text-gray-500">From</th>
-                    <th className="px-4 py-2 text-xs font-medium text-gray-500">To</th>
-                    <th className="px-4 py-2 text-xs font-medium text-gray-500">Distance</th>
-                    <th className="px-4 py-2 text-xs font-medium text-gray-500">Time Waypoint</th>
+                    <th className="px-4 py-2 text-xs font-medium text-gray-500">
+                      From
+                    </th>
+                    <th className="px-4 py-2 text-xs font-medium text-gray-500">
+                      To
+                    </th>
+                    <th className="px-4 py-2 text-xs font-medium text-gray-500">
+                      Distance
+                    </th>
+                    <th className="px-4 py-2 text-xs font-medium text-gray-500">
+                      Time Waypoint
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {wayPoints.map(
                     (wayPoint, index) =>
                       index < wayPoints.length - 1 && (
-                        <tr key={wayPoint.waypointId} className="hover:bg-gray-50">
-                          <td className="px-4 py-2 text-sm text-gray-900">{wayPoint.locationName}</td>
-                          <td className="px-4 py-2 text-sm text-gray-900">{wayPoints[index + 1].locationName}</td>
+                        <tr
+                          key={wayPoint.waypointId}
+                          className="hover:bg-gray-50"
+                        >
                           <td className="px-4 py-2 text-sm text-gray-900">
-                            {interconnect[index] ? convertM(interconnect[index].distance) : ""}
+                            {wayPoint.locationName}
                           </td>
                           <td className="px-4 py-2 text-sm text-gray-900">
-                            {interconnect[index] ? formatTime(interconnect[index].timeWaypoint) : ""}
+                            {wayPoints[index + 1].locationName}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-gray-900">
+                            {interconnect[index]
+                              ? convertM(interconnect[index].distance)
+                              : ""}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-gray-900">
+                            {interconnect[index]
+                              ? formatTime(interconnect[index].timeWaypoint)
+                              : ""}
                           </td>
                         </tr>
-                      )
+                      ),
                   )}
                 </tbody>
               </table>
