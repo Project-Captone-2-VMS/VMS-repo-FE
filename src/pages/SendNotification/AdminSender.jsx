@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Modal, Input, Select, Button, Form, Space, Pagination } from "antd";
 import { over } from "stompjs";
-import { getAllNoti } from "../../services/apiRequest";
+import { getAllNoti, getAllUser } from "../../services/apiRequest";
 import useGetAllNotice from "../../components/hooks/useGetAllNotice";
 import SockJS from "sockjs-client";
 import * as Yup from "yup";
@@ -22,6 +22,8 @@ const AdminSender = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [filterType, setFilterType] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
+  const [users, setUsers] = useState([]);
+  const [userRole, setUserRole] = useState("");
 
   const [formData, setFormData] = useState({
     username: "",
@@ -54,7 +56,6 @@ const AdminSender = () => {
           JSON.stringify(formData),
         );
 
-        
         resetFormData();
         setIsModalVisible(false);
       });
@@ -68,12 +69,25 @@ const AdminSender = () => {
   };
 
   useEffect(() => {
+    const role = localStorage.getItem("userRole") || "USER"; // Thay bằng cách lấy thực tế
+    setUserRole(role);
+  }, []);
+
+  useEffect(() => {
     const fetchNotices = async () => {
       const updateNoti = await getAllNoti();
       setNotice(updateNoti);
     };
 
     fetchNotices();
+  }, []);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const userList = await getAllUser();
+      setUsers(userList.result || userList);
+    };
+    fetchUsers();
   }, []);
 
   const handleInputChange = (key, value) => {
@@ -191,17 +205,38 @@ const AdminSender = () => {
         ]}
       >
         <Form layout="vertical">
-          <Form.Item
-            label="Username"
-            validateStatus={errors.username ? "error" : ""}
-            help={errors.username}
-          >
-            <Input
-              placeholder="Enter Username"
-              value={formData.username}
-              onChange={(e) => handleInputChange("username", e.target.value)}
-            />
-          </Form.Item>
+          {userRole === "ADMIN" && (
+            <Form.Item
+              label="Username"
+              validateStatus={errors.username ? "error" : ""}
+              help={errors.username}
+            >
+              <Select
+                showSearch
+                placeholder="Select Username"
+                value={formData.username}
+                onChange={(value) => handleInputChange("username", value)}
+                filterOption={(input, option) =>
+                  option.label && typeof option.label === "string"
+                    ? option.label.includes(input)
+                    : false
+                }
+                className="text-black"
+              >
+                {users
+                  .filter((user) => user.roles?.[0]?.name !== "ADMIN")
+                  .map((user) => (
+                    <Select.Option
+                      key={user.username}
+                      value={user.username}
+                      label={user.username}
+                    >
+                      {user.username}
+                    </Select.Option>
+                  ))}
+              </Select>
+            </Form.Item>
+          )}
 
           <Form.Item
             label="Title"

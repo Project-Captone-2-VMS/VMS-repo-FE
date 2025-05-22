@@ -115,6 +115,19 @@ export const getAllVehicles = async () => {
   }
 };
 
+export const getAllUser = async () => {
+  try {
+    const response = await api.get("user/list");
+    return response.data.result || response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching vehicles:",
+      error.response ? error.response.data : error.message,
+    );
+    throw error;
+  }
+};
+
 export const createVehicle = async (vehicleDTO) => {
   const response = await api.post("vehicle/add", vehicleDTO);
   return response.data;
@@ -169,7 +182,6 @@ export const totalDrivers = async () => {
   return response.data;
 };
 
-
 export const totalAvailables = async () => {
   const response = await api.get(`vehicle/totalAvailable`);
   return response.data;
@@ -211,17 +223,17 @@ export const totalVehicles = async () => {
 };
 
 export const totalAccidents = async () => {
-  const response = await api.get(`vehicle/totalAccident`); 
+  const response = await api.get(`vehicle/totalAccident`);
   return response.data;
 };
 
 export const totalDelays = async () => {
-  const response = await api.get(`vehicle/totalDelay`); 
+  const response = await api.get(`vehicle/totalDelay`);
   return response.data;
 };
 
 export const totalMechanicals = async () => {
-  const response = await api.get(`vehicle/totalMechanical`); 
+  const response = await api.get(`vehicle/totalMechanical`);
   return response.data;
 };
 
@@ -254,10 +266,10 @@ export const deleteWarehouse = async (warehouseId) => {
 };
 export const getAllWarehouses = async () => {
   try {
-    const response = await api.get('/warehouse/all');
+    const response = await api.get("/warehouse/all");
     return response.data;
   } catch (error) {
-    console.error('Error details:', error.response?.data);
+    console.error("Error details:", error.response?.data);
     throw error;
   }
 };
@@ -530,14 +542,13 @@ export const getAlRouteByUsername = async (username) => {
   return response.data;
 };
 
-
 export const getAllRoute = async () => {
   try {
     // Sử dụng endpoint đúng với backend của bạn
-    const response = await api.get('route/all'); // <-- Sửa lại endpoint này
+    const response = await api.get("route/all"); // <-- Sửa lại endpoint này
     return response.data;
   } catch (error) {
-    console.error('Error fetching routes:', error);
+    console.error("Error fetching routes:", error);
     throw error;
   }
 };
@@ -545,7 +556,6 @@ export const getUserUsername = async (username) => {
   const response = await api.get(`driver/getInfo/${username}`);
   return response.data;
 };
-
 
 export const changePassword = async (username, passwords) => {
   const response = await api.post(
@@ -570,91 +580,92 @@ export const checkPhoneNumber = async (phoneNumber) => {
   return response.data;
 };
 
-
 export const getAllShipmentByRouteId = async (routeId) => {
   const response = await api.get(`shipment/getRoute/${routeId}`);
   return response.data;
 };
 
 export const logoutSystem = async (formData) => {
-  const response = await api.post(`auth/logout`,formData);
+  const response = await api.post(`auth/logout`, formData);
   return response.data;
 };
 
-
-
 export const createShipmentItem = async (shipmentItemData) => {
   try {
-    const response = await api.post('shipment-items/save', shipmentItemData);
+    const response = await api.post("shipment-items/save", shipmentItemData);
     return response.data;
   } catch (error) {
-    console.error('Error creating shipment item:', error.response?.data || error.message);
+    console.error(
+      "Error creating shipment item:",
+      error.response?.data || error.message,
+    );
     throw error;
   }
 };
 
-
-
 export const dashboardService = {
   getTotalDrivers: async () => {
-    const response = await api.get('/dashboard/total-drivers');
+    const response = await api.get("/dashboard/total-drivers");
     return response.data;
   },
-  
+
   getTotalVehicles: async () => {
-    const response = await api.get('/dashboard/total-vehicles'); 
+    const response = await api.get("/dashboard/total-vehicles");
     return response.data;
   },
 
   getTotalRoutes: async () => {
-    const response = await api.get('/dashboard/total-routes');
+    const response = await api.get("/dashboard/total-routes");
     return response.data;
   },
 
   getCompletedRoutes: async () => {
-    const response = await api.get('/dashboard/completed-routes');
+    const response = await api.get("/dashboard/completed-routes");
     return response.data;
   },
 
   getActiveRoutes: async () => {
-    const response = await api.get('/dashboard/active');
+    const response = await api.get("/dashboard/active");
     return response.data;
   },
 
   getVehicleStats: async () => {
     const [activeCount, inactiveCount] = await Promise.all([
-      api.get('/dashboard/vehicles/active/count'),
-      api.get('/dashboard/vehicles/inactive/count')
+      api.get("/dashboard/vehicles/active/count"),
+      api.get("/dashboard/vehicles/inactive/count"),
     ]);
     return {
       active: activeCount.data,
-      inactive: inactiveCount.data
+      inactive: inactiveCount.data,
     };
   },
 
   getActiveVehicles: async () => {
-    const response = await api.get('/dashboard/vehicles/active');
+    const response = await api.get("/dashboard/vehicles/active");
     return response.data;
   },
 
   getDriverStats: async () => {
     const [activeCount, inactiveCount] = await Promise.all([
-      api.get('/dashboard/drivers/active/count'),
-      api.get('/dashboard/drivers/inactive/count')
+      api.get("/dashboard/drivers/active/count"),
+      api.get("/dashboard/drivers/inactive/count"),
     ]);
     return {
       active: activeCount.data,
-      inactive: inactiveCount.data
+      inactive: inactiveCount.data,
     };
-  }
+  },
 };
 
 export const getAllShipmentItems = async () => {
   try {
-    const response = await api.get('shipment-items/findAll');
+    const response = await api.get("shipment-items/findAll");
     return response.data.result || response.data; // Thêm .result để phòng trường hợp data được wrap
   } catch (error) {
-    console.error('Error fetching shipment items:', error.response?.data || error);
+    console.error(
+      "Error fetching shipment items:",
+      error.response?.data || error,
+    );
     throw error;
   }
 };
@@ -664,7 +675,10 @@ export const deleteShipmentItem = async (id) => {
     const response = await api.delete(`shipment-items/delete/${id}`);
     return response.data;
   } catch (error) {
-    console.error('Error deleting shipment item:', error.response?.data || error);
+    console.error(
+      "Error deleting shipment item:",
+      error.response?.data || error,
+    );
     throw error;
   }
 };
