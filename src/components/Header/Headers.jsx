@@ -46,6 +46,8 @@ const Headers = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
+
+  console.log("notifications" ,notifications )
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -306,6 +308,7 @@ const Headers = () => {
                             <div className="flex items-start gap-3">
                               <div className="rounded-full bg-blue-100 p-2">
                                 {getNotificationIcon(notice)}
+                                
                               </div>
                               <div className="flex-1">
                                 <div className="flex items-start justify-between">

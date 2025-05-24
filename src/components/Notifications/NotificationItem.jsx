@@ -15,8 +15,16 @@ const NotificationItem = ({ notice, onClick }) => {
 
   const getNotificationTime = (createdAt) => {
     const date = new Date(createdAt || new Date());
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return date.toLocaleString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
   };
+
+  console.log("lanh_notice", notice);
 
   return (
     <motion.li
@@ -36,7 +44,7 @@ const NotificationItem = ({ notice, onClick }) => {
               {notice.notification?.title || "No Title"}
             </p>
             <span className="text-xs text-gray-500">
-              {getNotificationTime(notice.createdAt)}
+              {getNotificationTime(notice.notification?.createdAt)}
             </span>
           </div>
           <p className="mt-1 line-clamp-2 text-sm text-gray-600 group-hover:text-gray-700">

@@ -7,6 +7,7 @@ import {
   getUserByUsername,
   getNoti,
   logoutSystem,
+  deleteAllNotifications,
 } from "../../services/apiRequest";
 import SockJS from "sockjs-client";
 import HeaderLeft from "./HeaderLeft";
@@ -14,6 +15,7 @@ import NotificationBell from "./NotificationBell";
 import UserDropdown from "./UserDropdown";
 import NotificationPopup from "./NotificationPopup";
 import { useNavigate } from "react-router";
+import toast from "react-hot-toast";
 
 const MainHeader = () => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -61,9 +63,13 @@ const MainHeader = () => {
     if (!username) return;
     const getNotice = async () => {
       const res = await getNoti(username);
+
       if (res) {
-        setNotifications(res);
-        setNotificationCount(res.length);
+        const sortedNotifications = [...res].sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+        );
+        setNotifications(sortedNotifications);
+        setNotificationCount(sortedNotifications.length);
         setHasNewNotification(true);
       }
     };
@@ -74,7 +80,7 @@ const MainHeader = () => {
     client.connect(
       {},
       () => {
-        client.subscribe(`/user/${username}/notifications`, (message) => {
+        client.subscribe(`/user/${username}/notifications`, () => {
           getNotice();
         });
       },
@@ -93,6 +99,19 @@ const MainHeader = () => {
     navigate("/login");
   };
 
+  const handleDeleteAllNotifications = async () => {
+    try {
+      await deleteAllNotifications();
+      setNotifications([]);
+      setNotificationCount(0);
+      setHasNewNotification(false);
+      toast.success("All notifications have been deleted!");
+    } catch (error) {
+      console.error("Error deleting notifications:", error);
+      toast.error("Failed to delete notifications. Please try again.");
+    }
+  };
+
   return (
     <motion.header className="sticky top-0 z-50 w-full rounded-xl bg-white/80 px-4 py-3 shadow-lg backdrop-blur-md">
       <div className="flex flex-grow items-center justify-between">
@@ -107,6 +126,7 @@ const MainHeader = () => {
             setSelectedNotification={setSelectedNotification}
             setNotificationCount={setNotificationCount}
             setHasNewNotification={setHasNewNotification}
+            onDeleteAll={handleDeleteAllNotifications}
           />
           <UserDropdown
             fullName={fullName}

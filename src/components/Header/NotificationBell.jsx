@@ -1,12 +1,6 @@
-import {
-  motion,
-  AnimatePresence,
-} from "framer-motion";
-import {
-  Bell,
-  BellRing,
-  Trash2,
-} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Bell, BellRing, Trash2 } from "lucide-react";
+import PropTypes from "prop-types";
 import NotificationList from "./NotificationList";
 
 const NotificationBell = ({
@@ -18,17 +12,12 @@ const NotificationBell = ({
   setSelectedNotification,
   setNotificationCount,
   setHasNewNotification,
+  onDeleteAll,
 }) => {
   const toggleNotifications = () => {
     setShowNotifications(!showNotifications);
     setNotificationCount(0);
     setHasNewNotification(false);
-  };
-
-  const deleteAllNotifications = () => {
-    setNotifications([]);
-    setNotificationCount(0);
-    localStorage.removeItem("notifications");
   };
 
   return (
@@ -78,7 +67,7 @@ const NotificationBell = ({
                 {notifications.length > 0 && (
                   <motion.button
                     whileHover={{ scale: 1.05 }}
-                    onClick={deleteAllNotifications}
+                    onClick={onDeleteAll}
                     className="flex items-center gap-1 rounded-full bg-red-500/20 px-3 py-1 text-sm text-white hover:text-red-200"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -96,6 +85,28 @@ const NotificationBell = ({
       </AnimatePresence>
     </div>
   );
+};
+
+NotificationBell.propTypes = {
+  notifications: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      notification: PropTypes.shape({
+        type: PropTypes.string,
+        title: PropTypes.string,
+        content: PropTypes.string,
+      }),
+      createdAt: PropTypes.string,
+    }),
+  ).isRequired,
+  notificationCount: PropTypes.number.isRequired,
+  hasNewNotification: PropTypes.bool.isRequired,
+  showNotifications: PropTypes.bool.isRequired,
+  setShowNotifications: PropTypes.func.isRequired,
+  setSelectedNotification: PropTypes.func.isRequired,
+  setNotificationCount: PropTypes.func.isRequired,
+  setHasNewNotification: PropTypes.func.isRequired,
+  onDeleteAll: PropTypes.func.isRequired,
 };
 
 export default NotificationBell;

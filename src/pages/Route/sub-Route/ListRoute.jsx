@@ -1,172 +1,113 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, MapPin, Truck, Clock, Menu, X, User } from 'lucide-react';
-import axios from 'axios';
-const apiKey = import.meta.env.VITE_HERE_MAP_API_KEY; // Lấy API key từ biến môi trường
-//a vũ làm phần lấy tọa độ từ firebase nằm ở trường timestamp(là điểm tọa độ của tài xế) có giờ số giờ update nữa 
-//  còn mấy trường lấy từ route đã lấy giống trong DB
-// Simulated Firebase driver location data (hardcoded)
-const firebaseDriverLocations = [
-  { 
-    driverId: 1, 
-    lat: 10.8231, 
-    lng: 106.6297, 
-    timestamp: '2025-05-16T20:23:00',
-  },
-  { 
-    driverId: 2, 
-    lat: 10.8300, 
-    lng: 106.6350, 
-    timestamp: '2025-05-16T20:22:00',
-
-  },
-  { 
-    driverId: 3, 
-    lat: 10.8150, 
-    lng: 106.6200, 
-    timestamp: '2025-05-16T20:21:00',
-  },
-  { 
-    driverId: 4, 
-    lat: 10.8350, 
-    lng: 106.6400, 
-    timestamp: '2025-05-16T20:24:00',
-
-  },
-  { 
-    driverId: 5, 
-    lat: 10.8100, 
-    lng: 106.6250, 
-    timestamp: '2025-05-16T20:20:00',
-  },
-];
-
-// Simulated API service functions
-const getAllRoute = async () => {
-  try {
-    return [
-      {
-        routeId: 1,
-        driver: { firstName: 'John', lastName: 'Smith', id: 1 },
-        status: 'Active',
-        vehicle: { licensePlate: '51F-123.45' },
-        totalTime: 1200,
-        totalDistance: 15000,
-        startLocationName: 'Warehouse District 1',
-        endLocationName: 'Store District 2',
-      },
-      {
-        routeId: 2,
-        driver: { firstName: 'Trần', lastName: 'Thị B', id: 2 },
-        status: 'Idle',
-        vehicle: { licensePlate: '59H-789.10' },
-        totalTime: 1800,
-        totalDistance: 20000,
-        startLocationName: 'Kho Quận 3',
-        endLocationName: 'Cửa hàng Quận 4',
-      },
-      {
-        routeId: 3,
-        driver: { firstName: 'Lê', lastName: 'Văn C', id: 3 },
-        status: 'Active',
-        vehicle: { licensePlate: '51D-456.78' },
-        totalTime: 900,
-        totalDistance: 10000,
-        startLocationName: 'Kho Quận 5',
-        endLocationName: 'Cửa hàng Quận 6',
-      },
-      {
-        routeId: 4,
-        driver: { firstName: 'Phạm', lastName: 'Thị D', id: 4 },
-        status: 'Active',
-        vehicle: { licensePlate: '59P-246.80' },
-        totalTime: 1500,
-        totalDistance: 18000,
-        startLocationName: 'Kho Quận 7',
-        endLocationName: 'Cửa hàng Quận 8',
-      },
-      {
-        routeId: 5,
-        driver: { firstName: 'Hoàng', lastName: 'Văn E', id: 5 },
-        status: 'Break',
-        vehicle: { licensePlate: '51G-357.91' },
-        totalTime: 1350,
-        totalDistance: 12000,
-        startLocationName: 'Kho Quận 9',
-        endLocationName: 'Cửa hàng Quận 10',
-      },
-    ];
-  } catch (error) {
-    console.error('Error fetching routes:', error);
-    return [];
-  }
-};
+import React, { useState, useEffect, useRef } from "react";
+import { Search, MapPin, Truck, Clock, Menu, X, User } from "lucide-react";
+import { Button, Modal } from "antd";
+import axios from "axios";
+import Swal from "sweetalert2";
+import {
+  getWayPoint,
+  getInterConnections,
+  getAllRoute,
+  getAllDrivers,
+} from "../../../services/apiRequest";
 
 const ListRoute = () => {
+  // Thêm/sửa các states
   const [routes, setRoutes] = useState([]);
+  const [wayPoints, setWayPoints] = useState([]);
+  const [interconnect, setInterconnect] = useState([]);
   const [selectedDriver, setSelectedDriver] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [filteredRoutes, setFilteredRoutes] = useState([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const mapRef = useRef(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [map, setMap] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [filteredRoutes, setFilteredRoutes] = useState([]);
+  const [firebaseDriverLocations, setFirebaseDriverLocations] = useState([]);
+  const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
   const routePolylines = useRef([]);
   const markers = useRef([]);
+  const mapRef = useRef(null);
+  const markersRef = useRef([]); // Thêm dòng này
+  const polylineRef = useRef(null); // Thêm dòng này nếu chưa có
+  const token = localStorage.getItem("jwtToken");
+  const apiKey = import.meta.env.VITE_HERE_MAP_API_KEY;
 
-  // Function to convert distance to km
-  const convertM = (distance) => {
-    return `${(distance / 1000).toFixed(1)} km`;
+  const convertGeocode = async (lat, lng) => {
+    try {
+      const response = await axios.get(
+        "https://revgeocode.search.hereapi.com/v1/revgeocode",
+        {
+          params: {
+            at: `${lat},${lng}`,
+            lang: "en-US",
+            apiKey: apiKey,
+          },
+        },
+      );
+
+      if (
+        response.data &&
+        response.data.items &&
+        response.data.items.length > 0
+      ) {
+        const addr = response.data.items[0].address;
+        return {
+          street: addr.street || "",
+          houseNumber: addr.houseNumber || "",
+          district: addr.district || "",
+          city: addr.city || "",
+          state: addr.state || "",
+          country: addr.countryName || "",
+          postalCode: addr.postalCode || "",
+          label: response.data.items[0].title || "",
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error("Reverse geocoding error:", error);
+      return null;
+    }
   };
 
-  // Function to format duration time
-  const formatDuration = (seconds) => {
+  // Helper functions
+  const convertM = (distance) => `${(distance / 1000).toFixed(1)} km`;
+
+  const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     return `About ${hours}h ${minutes}m`;
   };
 
-  // Format timestamp to human-readable time
-  const formatTime = (timestamp) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-  };
-
   // Initialize map
   useEffect(() => {
-    // Kiểm tra nếu chưa có map và window.H đã được load
-    if (!mapRef.current && window.H) {
-      // Khởi tạo platform với API key
-      const platform = new window.H.service.Platform({
-        apikey: apiKey
-      });
+    if (window.H && !mapRef.current) {
+      const platformInstance = new H.service.Platform({ apikey: apiKey });
+      const defaultLayers = platformInstance.createDefaultLayers();
 
-      // Tạo layer mặc định
-      const defaultLayers = platform.createDefaultLayers();
-
-      // Khởi tạo map
       const mapInstance = new window.H.Map(
-        document.getElementById('mapContainer'),
+        document.getElementById("mapContainer"),
         defaultLayers.vector.normal.map,
         {
-          center: { lat: 10.8231, lng: 106.6297 }, // Tọa độ trung tâm TP.HCM
+          center: { lat: 10.8231, lng: 106.6297 },
           zoom: 12,
-          pixelRatio: window.devicePixelRatio || 1
-        }
+          pixelRatio: window.devicePixelRatio || 1,
+        },
       );
 
       // Thêm các control và behavior cho map
-      const behavior = new window.H.mapevents.Behavior(new window.H.mapevents.MapEvents(mapInstance));
-      const ui = window.H.ui.UI.createDefault(mapInstance, defaultLayers);
+      new window.H.mapevents.Behavior(
+        new window.H.mapevents.MapEvents(mapInstance),
+      );
+      window.H.ui.UI.createDefault(mapInstance, defaultLayers);
 
-      // Lưu map instance vào state
+      mapRef.current = mapInstance;
       setMap(mapInstance);
 
-      // Xử lý resize map khi thay đổi kích thước màn hình
-      window.addEventListener('resize', () => {
-        mapInstance.getViewPort().resize();
-      });
+      // Xử lý resize map
+      window.addEventListener("resize", () =>
+        mapInstance.getViewPort().resize(),
+      );
 
-      // Cleanup function
       return () => {
         if (mapInstance) {
           mapInstance.dispose();
@@ -178,9 +119,31 @@ const ListRoute = () => {
   // Fetch routes
   useEffect(() => {
     const fetchData = async () => {
-      const listRoute = await getAllRoute();
-      setRoutes(listRoute);
-      setFilteredRoutes(listRoute);
+      try {
+        const listRoute = await getAllRoute();
+        if (listRoute && Array.isArray(listRoute) && listRoute.length > 0) {
+          const validRoutes = listRoute.filter(
+            (route) =>
+              !isNaN(route.startLat) &&
+              !isNaN(route.startLng) &&
+              !isNaN(route.endLat) &&
+              !isNaN(route.endLng),
+          );
+
+          const routeAddressPromises = validRoutes.map(async (route) => {
+            const { startLat, startLng, endLat, endLng } = route;
+            const startAddress = await convertGeocode(startLat, startLng);
+            const endAddress = await convertGeocode(endLat, endLng);
+            return { ...route, startAddress, endAddress };
+          });
+
+          const routeAddresses = await Promise.all(routeAddressPromises);
+          setRoutes(routeAddresses);
+          setFilteredRoutes(routeAddresses);
+        }
+      } catch (error) {
+        console.error("Error fetching routes:", error);
+      }
     };
     fetchData();
   }, []);
@@ -188,56 +151,60 @@ const ListRoute = () => {
   // Filter routes based on search and status
   useEffect(() => {
     let filtered = routes;
-    
+
     if (searchTerm) {
       filtered = filtered.filter(
         (route) =>
           `${route.driver.firstName} ${route.driver.lastName}`
             .toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
-          route.vehicle.licensePlate.toLowerCase().includes(searchTerm.toLowerCase())
+          route.vehicle.licensePlate
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()),
       );
     }
-    
+
     if (statusFilter) {
       filtered = filtered.filter((route) => route.status === statusFilter);
     }
-    
+
     setFilteredRoutes(filtered);
   }, [routes, searchTerm, statusFilter]);
 
   // Update markers for all drivers
   const updateAllDriverMarkers = () => {
     if (!mapRef.current) return;
-    
+
     // Clear existing markers
     if (markersRef.current.length > 0) {
-      markersRef.current.forEach(marker => mapRef.current.removeObject(marker));
+      markersRef.current.forEach((marker) =>
+        mapRef.current.removeObject(marker),
+      );
       markersRef.current = [];
     }
-    
+
     // Create all driver markers with different colors based on status
-    filteredRoutes.forEach(route => {
+    filteredRoutes.forEach((route) => {
       const driverLocation = firebaseDriverLocations.find(
-        (loc) => loc.driverId === route.driver.id
+        (loc) => loc.driverId === route.driver.id,
       );
-      
+
       if (driverLocation) {
         let markerColor;
-        switch(route.status) {
-          case 'Active':
-            markerColor = '#22c55e'; // green
+        switch (route.status) {
+          case "Active":
+            markerColor = "#22c55e"; // green
             break;
-          case 'Idle':
-            markerColor = '#3b82f6'; // blue
+          case "Idle":
+            markerColor = "#3b82f6"; // blue
             break;
-          case 'Break':
-            markerColor = '#f59e0b'; // amber
+          case "Break":
+            markerColor = "#f59e0b"; // amber
             break;
           default:
-            markerColor = '#6b7280'; // gray
+            markerColor = "#6b7280"; // gray
         }
-        
+
         // Create custom marker with driver icon
         const svgMarkup = `
           <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
@@ -247,16 +214,16 @@ const ListRoute = () => {
               transform="rotate(${driverLocation.heading}, 16, 16)" />
           </svg>
         `;
-        
+
         const icon = new window.H.map.Icon(svgMarkup, {
-          anchor: { x: 16, y: 16 }
+          anchor: { x: 16, y: 16 },
         });
-        
+
         const marker = new window.H.map.Marker(
           { lat: driverLocation.lat, lng: driverLocation.lng },
-          { icon: icon }
+          { icon: icon },
         );
-        
+
         // Add data to marker for info window
         marker.setData({
           name: `${route.driver.firstName} ${route.driver.lastName}`,
@@ -264,14 +231,14 @@ const ListRoute = () => {
           status: route.status,
           timestamp: driverLocation.timestamp,
           speed: driverLocation.speed,
-          routeInfo: route
+          routeInfo: route,
         });
-        
+
         // Add event listener to marker
-        marker.addEventListener('tap', (evt) => {
+        marker.addEventListener("tap", (evt) => {
           const data = evt.target.getData();
           setSelectedDriver(data.routeInfo);
-          
+
           // Create info bubble
           const bubble = new window.H.ui.InfoBubble(evt.target.getGeometry(), {
             content: `
@@ -280,20 +247,23 @@ const ListRoute = () => {
                 <div>BKS: ${data.licensePlate}</div>
                 <div>Tốc độ: ${data.speed} km/h</div>
                 <div>Cập nhật: ${formatTime(data.timestamp)}</div>
-                <div style="color: ${data.status === 'Active' ? 'green' : data.status === 'Break' ? 'orange' : 'blue'};">
+                <div style="color: ${data.status === "Active" ? "green" : data.status === "Break" ? "orange" : "blue"};">
                   Trạng thái: ${data.status}
                 </div>
               </div>
-            `
+            `,
           });
-          
+
           // Add info bubble to UI
-          mapRef.current.getViewModel().setLookAtData({
-            position: { lat: driverLocation.lat, lng: driverLocation.lng },
-            zoom: 15
-          }, true);
+          mapRef.current.getViewModel().setLookAtData(
+            {
+              position: { lat: driverLocation.lat, lng: driverLocation.lng },
+              zoom: 15,
+            },
+            true,
+          );
         });
-        
+
         mapRef.current.addObject(marker);
         markersRef.current.push(marker);
       }
@@ -312,7 +282,7 @@ const ListRoute = () => {
     if (selectedDriver && mapRef.current) {
       // Find driver location from Firebase data
       const driverLocation = firebaseDriverLocations.find(
-        (loc) => loc.driverId === selectedDriver.driver.id
+        (loc) => loc.driverId === selectedDriver.driver.id,
       );
 
       if (driverLocation) {
@@ -321,7 +291,7 @@ const ListRoute = () => {
           mapRef.current.removeObject(polylineRef.current);
           polylineRef.current = null;
         }
-        
+
         // Create simulated route line (in real app, this would come from your route data)
         const routePoints = [
           // Start point - simulating route from start to current location
@@ -335,133 +305,373 @@ const ListRoute = () => {
           { lat: driverLocation.lat + 0.008, lng: driverLocation.lng + 0.01 },
           { lat: driverLocation.lat + 0.015, lng: driverLocation.lng + 0.02 },
         ];
-        
+
         const lineString = new window.H.geo.LineString();
-        routePoints.forEach(point => {
+        routePoints.forEach((point) => {
           lineString.pushPoint(point);
         });
-        
+
         const routeLine = new window.H.map.Polyline(lineString, {
           style: {
             lineWidth: 5,
-            strokeColor: '#22c55e',
-            lineTailCap: 'arrow-tail',
-            lineHeadCap: 'arrow-head'
-          }
+            strokeColor: "#22c55e",
+            lineTailCap: "arrow-tail",
+            lineHeadCap: "arrow-head",
+          },
         });
-        
+
         mapRef.current.addObject(routeLine);
         polylineRef.current = routeLine;
-        
+
         // Zoom to show the whole route
         mapRef.current.getViewModel().setLookAtData({
           bounds: routeLine.getBoundingBox(),
-          padding: 100
+          padding: 100,
         });
       }
     }
   }, [selectedDriver]);
 
-  const showRouteOnMap = async (route) => {
-    if (!map) return;
-  
-    // Clear existing routes and markers
-    routePolylines.current.forEach(polyline => map.removeObject(polyline));
+  const clearMap = () => {
+    routePolylines.current.forEach((polyline) => {
+      mapRef.current.removeObject(polyline);
+    });
     routePolylines.current = [];
-    markers.current.forEach(marker => map.removeObject(marker));
+    markers.current.forEach((marker) => {
+      mapRef.current.removeObject(marker);
+    });
     markers.current = [];
-  
+  };
+
+  // Sửa lại hàm showRouteOnMap
+  const showRouteOnMap = async (route, waypoints = null) => {
+    if (!map) return;
+
+    // Clear existing routes and markers
+    clearMap();
+
     try {
-      const response = await axios.get("https://router.hereapi.com/v8/routes", {
-        params: {
-          origin: route.startLocation,
-          destination: route.endLocation,
-          transportMode: "car",
-          return: "polyline,summary",
-          apikey: apiKey,
-        }
-      });
-  
-      if (response.data.routes && response.data.routes.length > 0) {
+      let response;
+
+      if (waypoints) {
+        // If waypoints are provided, use the local API
+        response = await axios.get(
+          "http://localhost:8080/api/route/findRoute",
+          {
+            params: {
+              originLat: waypoints[0].lat,
+              originLng: waypoints[0].lng,
+              destinationLat: waypoints[waypoints.length - 1].lat,
+              destinationLng: waypoints[waypoints.length - 1].lng,
+            },
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+      } else if (route?.startLocation && route?.endLocation) {
+        // Check if route and its properties exist before splitting
+        const startPoint = route.startLocation.split(",");
+        const endPoint = route.endLocation.split(",");
+
+        response = await axios.get("https://router.hereapi.com/v8/routes", {
+          params: {
+            transportMode: "car",
+            origin: `${startPoint[0]},${startPoint[1]}`,
+            destination: `${endPoint[0]},${endPoint[1]}`,
+            return: "polyline,summary",
+            apikey: apiKey,
+          },
+        });
+      } else {
+        throw new Error("Invalid route data: Missing start or end location");
+      }
+
+      if (response.data.routes?.[0]) {
         const routeData = response.data.routes[0];
         const section = routeData.sections[0];
         const polylineData = section.polyline;
         const routeLine = H.geo.LineString.fromFlexiblePolyline(polylineData);
-        
+
         const routePolyline = new window.H.map.Polyline(routeLine, {
-          style: { strokeColor: 'blue', lineWidth: 5 }
+          style: { strokeColor: "blue", lineWidth: 5 },
         });
-  
+
         map.addObject(routePolyline);
         routePolylines.current.push(routePolyline);
-  
-        // Add markers for start and end points
-        const startMarker = new window.H.map.Marker({
-          lat: route.startLocation.split(',')[0],
-          lng: route.startLocation.split(',')[1]
-        });
-        const endMarker = new window.H.map.Marker({
-          lat: route.endLocation.split(',')[0],
-          lng: route.endLocation.split(',')[1]
-        });
-  
-        map.addObjects([startMarker, endMarker]);
-        markers.current.push(startMarker, endMarker);
-  
+
+        // Add markers
+        if (waypoints) {
+          // Add waypoint markers
+          waypoints.forEach((point, index) => {
+            const marker = new window.H.map.Marker({
+              lat: point.lat,
+              lng: point.lng,
+            });
+            map.addObject(marker);
+            markers.current.push(marker);
+          });
+        } else {
+          // Add start/end markers
+          const startPoint = route.startLocation.split(",");
+          const endPoint = route.endLocation.split(",");
+
+          const startMarker = new window.H.map.Marker({
+            lat: parseFloat(startPoint[0]),
+            lng: parseFloat(startPoint[1]),
+          });
+          const endMarker = new window.H.map.Marker({
+            lat: parseFloat(endPoint[0]),
+            lng: parseFloat(endPoint[1]),
+          });
+
+          map.addObjects([startMarker, endMarker]);
+          markers.current.push(startMarker, endMarker);
+        }
+
         // Fit map to show the route
         map.getViewModel().setLookAtData({
-          bounds: routePolyline.getBoundingBox()
+          bounds: routePolyline.getBoundingBox(),
+          padding: { top: 50, left: 50, bottom: 50, right: 50 },
         });
       }
     } catch (error) {
       console.error("Error showing route:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to load route on map. Missing route coordinates.",
+      });
     }
   };
 
   const handleRouteClick = (route) => {
-    setSelectedDriver(route);
-    showRouteOnMap(route);
+    // Sửa lại hàm handleRouteClick
+    const handleRouteClick = (route) => {
+      if (!route?.startLocation || !route?.endLocation) {
+        Swal.fire({
+          icon: "warning",
+          title: "Missing Data",
+          text: "Route coordinates are not available",
+        });
+        return;
+      }
+      setSelectedDriver(route);
+      showRouteOnMap(route);
+    };
+
+    handleRouteClick(route);
   };
 
-  // Filter status buttons
+  const handleDriverClick = async (driverId, routeId) => {
+    try {
+      const res = await getWayPoint(routeId);
+      setMapWayPoints(res);
+
+      const resInter = await getInterConnections(routeId);
+      setMapInters(resInter);
+      setLoading(true);
+      clearMap();
+
+      for (const [index, wayPoint] of res.entries()) {
+        const marker = new window.H.map.Marker({
+          lat: wayPoint.lat,
+          lng: wayPoint.lng,
+        });
+
+        const address = await convertGeocode(wayPoint.lat, wayPoint.lng);
+        let label =
+          index === 0
+            ? "Start"
+            : index === res.length - 1
+              ? "End"
+              : `Waypoint ${index}`;
+
+        if (address) {
+          label += `: ${address.label}`;
+        }
+
+        marker.setData(label);
+        mapRef.current.addObject(marker);
+        markers.current.push(marker);
+
+        marker.addEventListener("tap", (e) => {
+          const content = marker.getData();
+          Swal.fire({
+            title: content,
+            timer: 5000,
+            showConfirmButton: false,
+            showCloseButton: true,
+            timerProgressBar: true,
+          });
+        });
+      }
+
+      // Show route on map
+      await showRouteOnMap(null, res);
+    } catch (error) {
+      console.error("Error showing driver route:", error);
+    }
+  };
+
+  // Thêm hàm renderRoute
+  const renderRoute = (route) => {
+    const section = route.sections[0];
+    const polylineData = section.polyline;
+    const routeLine =
+      window.H.geo.LineString.fromFlexiblePolyline(polylineData);
+
+    // Create route polylines
+    const outlinePolyline = new window.H.map.Polyline(routeLine, {
+      style: { strokeColor: "gray", lineWidth: 8 },
+    });
+    const routePolyline = new window.H.map.Polyline(routeLine, {
+      style: { strokeColor: "rgba(0, 128, 255, 0.7)", lineWidth: 5 },
+    });
+
+    mapRef.current.addObject(outlinePolyline);
+    mapRef.current.addObject(routePolyline);
+    routePolylines.current.push(outlinePolyline, routePolyline);
+
+    // Fit map to show the route
+    mapRef.current.getViewModel().setLookAtData({
+      bounds: routePolyline.getBoundingBox(),
+      padding: { top: 50, left: 50, bottom: 50, right: 50 },
+    });
+  };
+
+  // Thêm hàm xử lý view route
+  const handleViewRoute = async (route) => {
+    try {
+      setLoading(true);
+
+      // Get waypoints
+      const res = await getWayPoint(route.routeId);
+      if (!res || res.length === 0) {
+        throw new Error("No waypoints found");
+      }
+
+      setWayPoints(res);
+      clearMap();
+
+      // Add markers for each waypoint with locationName from DB
+      for (const [index, wayPoint] of res.entries()) {
+        const marker = new window.H.map.Marker({
+          lat: wayPoint.lat,
+          lng: wayPoint.lng,
+        });
+
+        // Lấy tên điểm dừng từ DB
+        let label;
+        if (index === 0) {
+          label = `Start: ${wayPoint.locationName || ""}`;
+        } else if (index === res.length - 1) {
+          label = `End: ${wayPoint.locationName || ""}`;
+        } else {
+          label = `Stop ${index}: ${wayPoint.locationName || ""}`;
+        }
+
+        marker.setData(label);
+        mapRef.current.addObject(marker);
+        markers.current.push(marker);
+
+        // Add click event to marker
+        marker.addEventListener("tap", (evt) => {
+          const content = evt.target.getData();
+          Swal.fire({
+            title: content,
+            timer: 5000,
+            showConfirmButton: false,
+            showCloseButton: true,
+            timerProgressBar: true,
+          });
+        });
+      }
+
+      // Get route data
+      const response = await axios.get(
+        "http://localhost:8080/api/route/findRoute",
+        {
+          params: {
+            originLat: res[0].lat,
+            originLng: res[0].lng,
+            destinationLat: res[res.length - 1].lat,
+            destinationLng: res[res.length - 1].lng,
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (response.data.routes?.[0]) {
+        renderRoute(response.data.routes[0]);
+      }
+
+      // Get interconnections
+      const resInter = await getInterConnections(route.routeId);
+      setInterconnect(resInter);
+    } catch (error) {
+      console.error("Error viewing route:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to load route details",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const statusButtons = [
-    { status: '', label: 'All', color: 'bg-gray-500' },
-    { status: 'Active', label: 'Active', color: 'bg-green-500' },
-    { status: 'Idle', label: 'Idle', color: 'bg-blue-500' },
+    {
+      status: "",
+      label: "All",
+      color: "bg-gradient-to-r from-blue-400 to-green-400",
+      text: "text-white",
+      border: "border-blue-400",
+    },
+    {
+      status: "Active",
+      label: "Active",
+      color: "bg-green-500",
+      text: "text-white",
+      border: "border-green-500",
+    },
   ];
 
   return (
-    <div className="flex h-screen bg-gray-100 overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-gray-100">
       {/* Mobile menu toggle */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 bg-white p-2 rounded-full shadow-lg text-gray-700 focus:outline-none"
+        className="fixed left-4 top-4 z-50 rounded-full bg-white p-2 text-gray-700 shadow-lg focus:outline-none lg:hidden"
       >
         {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
       {/* Driver Sidebar */}
-      <div 
+      <div
         className={`${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } transition-transform duration-300 ease-in-out fixed lg:relative z-40 lg:translate-x-0 w-full lg:w-96 h-full bg-white shadow-lg overflow-hidden flex flex-col`}
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } fixed z-40 flex h-full w-full flex-col overflow-hidden bg-white shadow-lg transition-transform duration-300 ease-in-out lg:relative lg:w-96 lg:translate-x-0`}
       >
-        <div className="p-6 bg-gradient-to-r from-blue-600 to-blue-800 text-white">
-          <h2 className="text-2xl font-bold flex items-center">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-800 p-6 text-white">
+          <h2 className="flex items-center text-2xl font-bold">
             <Truck className="mr-2" size={24} />
             Driver Monitoring
           </h2>
-          <p className="text-blue-100 mt-1">Online Tracking System</p>
+          <p className="mt-1 text-blue-100">Online Tracking System</p>
         </div>
 
         {/* Search */}
-        <div className="p-4 border-b">
+        <div className="border-b p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               placeholder="Search driver, license plate..."
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              className="w-full rounded-lg border py-2 pl-10 pr-4 transition focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -469,13 +679,11 @@ const ListRoute = () => {
         </div>
 
         {/* Status filter */}
-        <div className="p-4 border-b flex flex-wrap gap-2">
+        <div className="flex flex-wrap justify-center gap-2 border-b p-4">
           {statusButtons.map((button) => (
             <button
               key={button.status}
-              className={`px-3 py-1 rounded-full text-white text-sm transition ${
-                statusFilter === button.status ? button.color : 'bg-gray-300'
-              }`}
+              className={`rounded-full border-2 px-5 py-2 font-semibold shadow transition-all duration-200 ${statusFilter === button.status ? `${button.color} ${button.text} ${button.border}` : "border-transparent bg-gray-100 text-gray-700"} hover:scale-105 hover:shadow-lg`}
               onClick={() => setStatusFilter(button.status)}
             >
               {button.label}
@@ -486,7 +694,7 @@ const ListRoute = () => {
         {/* Driver List */}
         <div className="flex-1 overflow-y-auto py-2">
           {filteredRoutes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-40 text-gray-500">
+            <div className="flex h-40 flex-col items-center justify-center text-gray-500">
               <User size={48} strokeWidth={1} />
               <p className="mt-2">No drivers found</p>
             </div>
@@ -494,80 +702,107 @@ const ListRoute = () => {
             filteredRoutes.map((route) => {
               // Find driver location from Firebase data
               const driverLocation = firebaseDriverLocations.find(
-                (loc) => loc.driverId === route.driver.id
+                (loc) => loc.driverId === route.driver.id,
               );
-              
+
               return (
                 <div
                   key={route.routeId}
-                  className={`mx-4 my-2 p-4 rounded-lg cursor-pointer transition-all duration-300 ${
+                  className={`mx-4 my-3 cursor-pointer rounded-xl border-2 p-5 transition-all duration-300 ${
                     selectedDriver?.routeId === route.routeId
-                      ? 'bg-blue-50 border-l-4 border-blue-500 shadow-md'
-                      : 'bg-white hover:bg-gray-50 border border-gray-100'
-                  }`}
-                  onClick={() => handleRouteClick(route)}
+                      ? "scale-105 border-blue-400 bg-gradient-to-r from-blue-100 to-green-100 shadow-xl"
+                      : "border-gray-200 bg-white hover:bg-gradient-to-r hover:from-blue-50 hover:to-green-50 hover:shadow-lg"
+                  } group`}
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    const start = route.startLocationName;
+                    const end = route.endLocationName;
+
+                    // Lấy waypoint từ API
+                    let waypoints = [];
+                    try {
+                      waypoints = await getWayPoint(route.routeId);
+                    } catch (err) {
+                      waypoints = [];
+                    }
+
+                    // Tạo HTML cho danh sách waypoint
+                    const waypointHtml =
+                      waypoints && waypoints.length > 0
+                        ? `<div style="margin-top:8px">
+                          <b style="color:#0ea5e9">Waypoints:</b>
+                          <ul style="padding-left:18px;margin:0">
+                            ${waypoints
+                              .map(
+                                (wp, idx) =>
+                                  `<li style="margin-bottom:2px">
+                                <span style="color:#6366f1;font-weight:bold">•</span> ${wp.locationName || `${wp.lat},${wp.lng}`}
+                              </li>`,
+                              )
+                              .join("")}
+                          </ul>
+                        </div>`
+                        : "";
+
+                    Swal.fire({
+                      title: `<span style="color:#2563eb">${route.driver.firstName} ${route.driver.lastName}</span>`,
+                      html: `
+                        <div style="text-align:left">
+                          <b style="color:#22c55e">Start:</b> ${start || "N/A"}<br/>
+                          <b style="color:#ef4444">End:</b> ${end || "N/A"}
+                          ${waypointHtml}
+                        </div>
+                      `,
+                      showCloseButton: true,
+                      width: 500,
+                    });
+                  }}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <div 
-                        className={`h-10 w-10 rounded-full flex items-center justify-center text-white mr-3 ${
-                          route.status === 'Active' ? 'bg-green-500' : 
-                          route.status === 'Idle' ? 'bg-blue-500' : 
-                          route.status === 'Break' ? 'bg-amber-500' : 'bg-gray-500'
-                        }`}
+                      <div
+                        className={`mr-4 flex h-12 w-12 items-center justify-center rounded-full text-lg font-bold text-white shadow ${route.status === "Active" ? "bg-green-500" : "bg-gray-400"} transition-transform duration-200 group-hover:scale-110`}
                       >
-                        {route.driver.firstName.charAt(0)}{route.driver.lastName.charAt(0)}
+                        {route.driver.firstName.charAt(0)}
+                        {route.driver.lastName.charAt(0)}
                       </div>
                       <div>
-                        <h3 className="font-medium text-gray-800">
+                        <h3 className="text-lg font-bold text-blue-700 group-hover:underline">
                           {route.driver.firstName} {route.driver.lastName}
                         </h3>
-                        <div className="flex items-center text-sm text-gray-500">
-                          <Truck size={14} className="mr-1" />
-                          {route.vehicle.licensePlate}
+                        <div className="mt-1 flex items-center text-sm text-gray-500">
+                          <Truck size={14} className="mr-1 text-blue-400" />
+                          <span className="font-semibold text-gray-700">
+                            {route.vehicle.licensePlate}
+                          </span>
                         </div>
                       </div>
                     </div>
-                    <div 
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        route.status === 'Active' ? 'bg-green-100 text-green-800' : 
-                        route.status === 'Idle' ? 'bg-blue-100 text-blue-800' : 
-                        'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {route.status === 'Active' ? 'Active' : 
-                       route.status === 'Idle' ? 'Idle' : route.status}
+                    <div className="text-right text-sm">
+                      <div className="font-semibold text-green-600">
+                        Distance: {convertM(route.totalDistance)}
+                      </div>
+                      <div className="font-semibold text-blue-600">
+                        Time: {formatTime(route.totalTime)}
+                      </div>
+                      {route.status === "Active" && (
+                        <div className="mt-1 inline-block rounded-full bg-green-100 px-2 py-0.5 text-xs font-bold text-green-700 shadow">
+                          Active
+                        </div>
+                      )}
                     </div>
                   </div>
-
-                  {selectedDriver?.routeId === route.routeId && driverLocation && (
-                    <div className="mt-4 pt-3 border-t border-gray-100 grid grid-cols-2 gap-2 text-sm animate-fadeIn">
-                      <div>
-                        <div className="text-gray-600 font-medium mb-1">Route:</div>
-                        <div className="text-sm text-gray-800 mb-2">
-                          <div className="flex items-center">
-                            <div className="h-2 w-2 rounded-full bg-blue-500 mr-2"></div>
-                            From: {route.startLocationName}
-                          </div>
-                          <div className="border-l-2 border-gray-300 h-4 ml-1"></div>
-                          <div className="flex items-center">
-                            <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
-                            To: {route.endLocationName}
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex items-center text-gray-700 mb-1">
-                          <Clock size={14} className="mr-1" />
-                          <span>Updated: {formatTime(driverLocation.timestamp)}</span>
-                        </div>
-                        <div className="flex items-center text-gray-700 mb-1">
-                          <MapPin size={14} className="mr-1" />
-                          <span>Location: {driverLocation.lat.toFixed(4)}, {driverLocation.lng.toFixed(4)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  <div className="mt-3 flex justify-end space-x-2">
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewRoute(route);
+                      }}
+                      className="rounded-full border border-green-400 bg-white px-4 py-1 text-sm font-semibold text-green-700 shadow transition hover:bg-green-50"
+                    >
+                      View Route
+                    </Button>
+                  </div>
                 </div>
               );
             })
@@ -575,34 +810,100 @@ const ListRoute = () => {
         </div>
 
         {/* Summary footer */}
-        <div className="p-4 bg-gray-50 border-t text-sm text-gray-600">
+        <div className="border-t bg-gray-50 p-4 text-sm text-gray-600">
           <div className="flex justify-between">
             <span>Total Drivers: {routes.length}</span>
-            <span>Active: {routes.filter(r => r.status === 'Active').length}</span>
+            <span>
+              Active: {routes.filter((r) => r.status === "Active").length}
+            </span>
           </div>
         </div>
       </div>
 
       {/* Map container */}
-      <div className="flex-1 relative">
-        <div id="mapContainer" className="w-full h-full"></div>
-        
+      <div className="relative flex-1">
+        <div id="mapContainer" className="h-full w-full"></div>
+
         {/* Legend overlay */}
-        <div className="absolute bottom-4 right-4 bg-white p-3 rounded-lg shadow-lg z-10 text-sm">
-          <div className="font-medium mb-2">Legend:</div>
-          <div className="flex items-center mb-1">
-            <div className="h-3 w-3 rounded-full bg-green-500 mr-2"></div>
+        <div className="absolute bottom-4 right-4 z-10 rounded-lg bg-white p-3 text-sm shadow-lg">
+          <div className="mb-2 font-medium">Legend:</div>
+          <div className="mb-1 flex items-center">
+            <div className="mr-2 h-3 w-3 rounded-full bg-green-500"></div>
             <span>Active</span>
           </div>
           <div className="flex items-center">
-            <div className="h-3 w-3 rounded-full bg-blue-500 mr-2"></div>
+            <div className="mr-2 h-3 w-3 rounded-full bg-blue-500"></div>
             <span>Idle</span>
           </div>
         </div>
       </div>
+
+      {/* Route Detail Modal */}
+      <Modal
+        title="Route Details"
+        open={isDetailModalVisible}
+        onCancel={() => setIsDetailModalVisible(false)}
+        footer={null}
+        width={950}
+      >
+        <div className="p-4">
+          {loading ? (
+            <div className="flex justify-center">
+              <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-blue-500"></div>
+            </div>
+          ) : (
+            <>
+              <div className="mb-4">
+                <h3 className="mb-2 text-lg font-semibold">
+                  Route Information
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-gray-600">Start Point:</p>
+                    <p>{wayPoints[0]?.address || "Loading..."}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">End Point:</p>
+                    <p>
+                      {wayPoints[wayPoints.length - 1]?.address || "Loading..."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <h3 className="mb-2 text-lg font-semibold">Waypoints</h3>
+                <div className="space-y-2">
+                  {wayPoints.map((point, index) => (
+                    <div key={index} className="rounded bg-gray-50 p-2">
+                      <p className="font-medium">Stop {index + 1}</p>
+                      <p className="text-sm text-gray-600">{point.address}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {interconnect && interconnect.length > 0 && (
+                <div>
+                  <h3 className="mb-2 text-lg font-semibold">Connections</h3>
+                  <div className="space-y-2">
+                    {interconnect.map((conn, index) => (
+                      <div key={index} className="rounded bg-blue-50 p-2">
+                        <p>From: {conn.fromLocation}</p>
+                        <p>To: {conn.toLocation}</p>
+                        <p>Distance: {convertM(conn.distance)}</p>
+                        <p>Time: {formatTime(conn.time)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 };
-
 
 export default ListRoute;

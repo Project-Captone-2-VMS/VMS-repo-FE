@@ -39,8 +39,6 @@ export const loginUser = async (user, dispatch, navigate) => {
       const userRole = res.data.result.roles[0];
       const token = res.data.result.token;
 
-      console.log("res", res);
-
       localStorage.setItem("userRole", userRole);
       localStorage.setItem("jwtToken", token);
       localStorage.setItem("username", user.username);
@@ -54,7 +52,7 @@ export const loginUser = async (user, dispatch, navigate) => {
       dispatch(loginSuccess(res.data));
       return res.data;
     }
-  } catch (err) {
+  } catch {
     toast.error("Login failed. Please try again.");
     dispatch(loginFailed());
   }
@@ -62,19 +60,16 @@ export const loginUser = async (user, dispatch, navigate) => {
 
 export const registerUser = async (user, dispatch, navigate) => {
   dispatch(registerStart());
-
   try {
     const res = await api.post("user/create", user);
     if (res.status === 200) {
       const userRole = res.data.result.roles[0];
-
       localStorage.setItem("userRole", userRole);
-
       toast.success("Registration successfully");
       dispatch(registerSuccess(res.data));
       navigate("/login");
     }
-  } catch (err) {
+  } catch {
     toast.error("Registration failed. Please try again.");
     dispatch(registerFailed());
   }
@@ -294,12 +289,8 @@ export const getAllProducts = async (warehouseId) => {
 };
 
 export const getWarehouseById = async (warehouseId) => {
-  try {
-    const response = await api.get(`warehouse/${warehouseId}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.get(`warehouse/${warehouseId}`);
+  return response.data;
 };
 
 // API gọi để lấy danh sách hóa đơn
@@ -331,21 +322,13 @@ export const getAllIncidents = async () => {
 };
 
 export const getIncidentById = async (id) => {
-  try {
-    const response = await api.get(`incidents/${id}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.get(`incidents/${id}`);
+  return response.data;
 };
 
 export const addIncident = async (incidentData) => {
-  try {
-    const response = await api.post("incidents/add", incidentData);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.post("incidents/add", incidentData);
+  return response.data;
 };
 
 export const updateIncident = async (id, updatedIncident) => {
@@ -362,50 +345,30 @@ export const updateIncident = async (id, updatedIncident) => {
 };
 
 export const deleteIncident = async (id) => {
-  try {
-    const response = await api.delete(`incidents/${id}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.delete(`incidents/${id}`);
+  return response.data;
 };
 
 export const getIncidentsByType = async (type) => {
-  try {
-    const response = await api.get(`incidents/type/${type}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.get(`incidents/type/${type}`);
+  return response.data;
 };
 
 export const getIncidentsByDateRange = async (startDate, endDate) => {
-  try {
-    const response = await api.get(
-      `incidents/date-range?startDate=${startDate}&endDate=${endDate}`,
-    );
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.get(
+    `incidents/date-range?startDate=${startDate}&endDate=${endDate}`,
+  );
+  return response.data;
 };
 
 export const getIncidentsByDriver = async (driverId) => {
-  try {
-    const response = await api.get(`incidents/driver/${driverId}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.get(`incidents/driver/${driverId}`);
+  return response.data;
 };
 
 export const getIncidentsByVehicle = async (vehicleId) => {
-  try {
-    const response = await api.get(`incidents/vehicle/${vehicleId}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.get(`incidents/vehicle/${vehicleId}`);
+  return response.data;
 };
 
 // Expense API endpoints
@@ -461,6 +424,11 @@ export const getNoti = async (username) => {
 
 export const getAllNoti = async () => {
   const response = await api.get(`notifications/all`);
+  return response.data;
+};
+
+export const deleteAllNotifications = async () => {
+  const response = await api.delete("notifications/all");
   return response.data;
 };
 
