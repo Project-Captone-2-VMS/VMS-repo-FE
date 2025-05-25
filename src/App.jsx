@@ -35,7 +35,6 @@ import { Toaster } from "react-hot-toast";
 import ChangePassWord from "./pages/ChangePassword/ChangePassWord";
 import Schedule from "./pages/Schedule"; // Add this import at the top
 
-import OtpAuth from "../src/OtpAuth";
 import ForgetPassword from "./pages/ChangePassword/ForgetPassword";
 
 function App() {
@@ -43,10 +42,6 @@ function App() {
     {
       path: "/",
       element: <Login />,
-    },
-    {
-      path: "/OtpAuth",
-      element: <OtpAuth />,
     },
     {
       path: "/forgetPassword",

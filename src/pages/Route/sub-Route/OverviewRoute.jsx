@@ -480,7 +480,7 @@ const Route = () => {
         );
         toast.success("Successfully created!");
         console.log("Notification Sent:", formDataSendNotification);
-        //window.location.reload();
+        window.location.reload();
       });
       resetForm();
     } catch (error) {

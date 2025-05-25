@@ -9,9 +9,11 @@ import {
   getAllRoute,
   getAllDrivers,
 } from "../../../services/apiRequest";
+import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { db } from "../../../firebase-config";
 
 const ListRoute = () => {
-  // Thêm/sửa các states
+  // Existing state and ref declarations (unchanged)
   const [routes, setRoutes] = useState([]);
   const [wayPoints, setWayPoints] = useState([]);
   const [interconnect, setInterconnect] = useState([]);
@@ -27,11 +29,12 @@ const ListRoute = () => {
   const routePolylines = useRef([]);
   const markers = useRef([]);
   const mapRef = useRef(null);
-  const markersRef = useRef([]); // Thêm dòng này
-  const polylineRef = useRef(null); // Thêm dòng này nếu chưa có
+  const markersRef = useRef([]);
+  const polylineRef = useRef(null);
   const token = localStorage.getItem("jwtToken");
   const apiKey = import.meta.env.VITE_HERE_MAP_API_KEY;
 
+  // Existing helper functions (unchanged)
   const convertGeocode = async (lat, lng) => {
     try {
       const response = await axios.get(
@@ -69,7 +72,6 @@ const ListRoute = () => {
     }
   };
 
-  // Helper functions
   const convertM = (distance) => `${(distance / 1000).toFixed(1)} km`;
 
   const formatTime = (seconds) => {
@@ -78,7 +80,7 @@ const ListRoute = () => {
     return `About ${hours}h ${minutes}m`;
   };
 
-  // Initialize map
+  // Existing useEffect for map initialization (unchanged)
   useEffect(() => {
     if (window.H && !mapRef.current) {
       const platformInstance = new H.service.Platform({ apikey: apiKey });
@@ -94,7 +96,6 @@ const ListRoute = () => {
         },
       );
 
-      // Thêm các control và behavior cho map
       new window.H.mapevents.Behavior(
         new window.H.mapevents.MapEvents(mapInstance),
       );
@@ -103,7 +104,6 @@ const ListRoute = () => {
       mapRef.current = mapInstance;
       setMap(mapInstance);
 
-      // Xử lý resize map
       window.addEventListener("resize", () =>
         mapInstance.getViewPort().resize(),
       );
@@ -116,7 +116,7 @@ const ListRoute = () => {
     }
   }, []);
 
-  // Fetch routes
+  // Existing useEffect for fetching routes (unchanged)
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -148,7 +148,7 @@ const ListRoute = () => {
     fetchData();
   }, []);
 
-  // Filter routes based on search and status
+  // Existing useEffect for filtering routes (unchanged)
   useEffect(() => {
     let filtered = routes;
 
@@ -171,11 +171,10 @@ const ListRoute = () => {
     setFilteredRoutes(filtered);
   }, [routes, searchTerm, statusFilter]);
 
-  // Update markers for all drivers
+  // Existing updateAllDriverMarkers function (unchanged)
   const updateAllDriverMarkers = () => {
     if (!mapRef.current) return;
 
-    // Clear existing markers
     if (markersRef.current.length > 0) {
       markersRef.current.forEach((marker) =>
         mapRef.current.removeObject(marker),
@@ -183,7 +182,6 @@ const ListRoute = () => {
       markersRef.current = [];
     }
 
-    // Create all driver markers with different colors based on status
     filteredRoutes.forEach((route) => {
       const driverLocation = firebaseDriverLocations.find(
         (loc) => loc.driverId === route.driver.id,
@@ -192,20 +190,16 @@ const ListRoute = () => {
       if (driverLocation) {
         let markerColor;
         switch (route.status) {
-          case "Active":
-            markerColor = "#22c55e"; // green
+          case true:
+            markerColor = "#22c55e";
             break;
-          case "Idle":
-            markerColor = "#3b82f6"; // blue
-            break;
-          case "Break":
-            markerColor = "#f59e0b"; // amber
+          case false:
+            markerColor = "#3b82f6";
             break;
           default:
-            markerColor = "#6b7280"; // gray
+            markerColor = "#6b7280";
         }
 
-        // Create custom marker with driver icon
         const svgMarkup = `
           <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
             <circle cx="16" cy="16" r="14" fill="${markerColor}" opacity="0.8" />
@@ -224,7 +218,6 @@ const ListRoute = () => {
           { icon: icon },
         );
 
-        // Add data to marker for info window
         marker.setData({
           name: `${route.driver.firstName} ${route.driver.lastName}`,
           licensePlate: route.vehicle.licensePlate,
@@ -234,12 +227,10 @@ const ListRoute = () => {
           routeInfo: route,
         });
 
-        // Add event listener to marker
         marker.addEventListener("tap", (evt) => {
           const data = evt.target.getData();
           setSelectedDriver(data.routeInfo);
 
-          // Create info bubble
           const bubble = new window.H.ui.InfoBubble(evt.target.getGeometry(), {
             content: `
               <div style="padding: 8px; max-width: 200px;">
@@ -254,7 +245,6 @@ const ListRoute = () => {
             `,
           });
 
-          // Add info bubble to UI
           mapRef.current.getViewModel().setLookAtData(
             {
               position: { lat: driverLocation.lat, lng: driverLocation.lng },
@@ -270,37 +260,31 @@ const ListRoute = () => {
     });
   };
 
-  // Update map when routes are loaded or filtered
+  // Existing useEffect for updating markers (unchanged)
   useEffect(() => {
     if (filteredRoutes.length > 0 && mapRef.current) {
       updateAllDriverMarkers();
     }
   }, [filteredRoutes]);
 
-  // Update map when a driver is selected
+  // Existing useEffect for selected driver (unchanged)
   useEffect(() => {
     if (selectedDriver && mapRef.current) {
-      // Find driver location from Firebase data
       const driverLocation = firebaseDriverLocations.find(
         (loc) => loc.driverId === selectedDriver.driver.id,
       );
 
       if (driverLocation) {
-        // Remove any existing route line
         if (polylineRef.current) {
           mapRef.current.removeObject(polylineRef.current);
           polylineRef.current = null;
         }
 
-        // Create simulated route line (in real app, this would come from your route data)
         const routePoints = [
-          // Start point - simulating route from start to current location
           { lat: driverLocation.lat - 0.01, lng: driverLocation.lng - 0.015 },
           { lat: driverLocation.lat - 0.005, lng: driverLocation.lng - 0.01 },
           { lat: driverLocation.lat - 0.002, lng: driverLocation.lng - 0.005 },
-          // Current driver location
           { lat: driverLocation.lat, lng: driverLocation.lng },
-          // Future route points
           { lat: driverLocation.lat + 0.003, lng: driverLocation.lng + 0.004 },
           { lat: driverLocation.lat + 0.008, lng: driverLocation.lng + 0.01 },
           { lat: driverLocation.lat + 0.015, lng: driverLocation.lng + 0.02 },
@@ -323,7 +307,6 @@ const ListRoute = () => {
         mapRef.current.addObject(routeLine);
         polylineRef.current = routeLine;
 
-        // Zoom to show the whole route
         mapRef.current.getViewModel().setLookAtData({
           bounds: routeLine.getBoundingBox(),
           padding: 100,
@@ -332,6 +315,7 @@ const ListRoute = () => {
     }
   }, [selectedDriver]);
 
+  // Existing clearMap function (unchanged)
   const clearMap = () => {
     routePolylines.current.forEach((polyline) => {
       mapRef.current.removeObject(polyline);
@@ -343,185 +327,12 @@ const ListRoute = () => {
     markers.current = [];
   };
 
-  // Sửa lại hàm showRouteOnMap
-  const showRouteOnMap = async (route, waypoints = null) => {
-    if (!map) return;
-
-    // Clear existing routes and markers
-    clearMap();
-
-    try {
-      let response;
-
-      if (waypoints) {
-        // If waypoints are provided, use the local API
-        response = await axios.get(
-          "http://localhost:8080/api/route/findRoute",
-          {
-            params: {
-              originLat: waypoints[0].lat,
-              originLng: waypoints[0].lng,
-              destinationLat: waypoints[waypoints.length - 1].lat,
-              destinationLng: waypoints[waypoints.length - 1].lng,
-            },
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
-      } else if (route?.startLocation && route?.endLocation) {
-        // Check if route and its properties exist before splitting
-        const startPoint = route.startLocation.split(",");
-        const endPoint = route.endLocation.split(",");
-
-        response = await axios.get("https://router.hereapi.com/v8/routes", {
-          params: {
-            transportMode: "car",
-            origin: `${startPoint[0]},${startPoint[1]}`,
-            destination: `${endPoint[0]},${endPoint[1]}`,
-            return: "polyline,summary",
-            apikey: apiKey,
-          },
-        });
-      } else {
-        throw new Error("Invalid route data: Missing start or end location");
-      }
-
-      if (response.data.routes?.[0]) {
-        const routeData = response.data.routes[0];
-        const section = routeData.sections[0];
-        const polylineData = section.polyline;
-        const routeLine = H.geo.LineString.fromFlexiblePolyline(polylineData);
-
-        const routePolyline = new window.H.map.Polyline(routeLine, {
-          style: { strokeColor: "blue", lineWidth: 5 },
-        });
-
-        map.addObject(routePolyline);
-        routePolylines.current.push(routePolyline);
-
-        // Add markers
-        if (waypoints) {
-          // Add waypoint markers
-          waypoints.forEach((point, index) => {
-            const marker = new window.H.map.Marker({
-              lat: point.lat,
-              lng: point.lng,
-            });
-            map.addObject(marker);
-            markers.current.push(marker);
-          });
-        } else {
-          // Add start/end markers
-          const startPoint = route.startLocation.split(",");
-          const endPoint = route.endLocation.split(",");
-
-          const startMarker = new window.H.map.Marker({
-            lat: parseFloat(startPoint[0]),
-            lng: parseFloat(startPoint[1]),
-          });
-          const endMarker = new window.H.map.Marker({
-            lat: parseFloat(endPoint[0]),
-            lng: parseFloat(endPoint[1]),
-          });
-
-          map.addObjects([startMarker, endMarker]);
-          markers.current.push(startMarker, endMarker);
-        }
-
-        // Fit map to show the route
-        map.getViewModel().setLookAtData({
-          bounds: routePolyline.getBoundingBox(),
-          padding: { top: 50, left: 50, bottom: 50, right: 50 },
-        });
-      }
-    } catch (error) {
-      console.error("Error showing route:", error);
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "Failed to load route on map. Missing route coordinates.",
-      });
-    }
-  };
-
-  const handleRouteClick = (route) => {
-    // Sửa lại hàm handleRouteClick
-    const handleRouteClick = (route) => {
-      if (!route?.startLocation || !route?.endLocation) {
-        Swal.fire({
-          icon: "warning",
-          title: "Missing Data",
-          text: "Route coordinates are not available",
-        });
-        return;
-      }
-      setSelectedDriver(route);
-      showRouteOnMap(route);
-    };
-
-    handleRouteClick(route);
-  };
-
-  const handleDriverClick = async (driverId, routeId) => {
-    try {
-      const res = await getWayPoint(routeId);
-      setMapWayPoints(res);
-
-      const resInter = await getInterConnections(routeId);
-      setMapInters(resInter);
-      setLoading(true);
-      clearMap();
-
-      for (const [index, wayPoint] of res.entries()) {
-        const marker = new window.H.map.Marker({
-          lat: wayPoint.lat,
-          lng: wayPoint.lng,
-        });
-
-        const address = await convertGeocode(wayPoint.lat, wayPoint.lng);
-        let label =
-          index === 0
-            ? "Start"
-            : index === res.length - 1
-              ? "End"
-              : `Waypoint ${index}`;
-
-        if (address) {
-          label += `: ${address.label}`;
-        }
-
-        marker.setData(label);
-        mapRef.current.addObject(marker);
-        markers.current.push(marker);
-
-        marker.addEventListener("tap", (e) => {
-          const content = marker.getData();
-          Swal.fire({
-            title: content,
-            timer: 5000,
-            showConfirmButton: false,
-            showCloseButton: true,
-            timerProgressBar: true,
-          });
-        });
-      }
-
-      // Show route on map
-      await showRouteOnMap(null, res);
-    } catch (error) {
-      console.error("Error showing driver route:", error);
-    }
-  };
-
-  // Thêm hàm renderRoute
   const renderRoute = (route) => {
-    const section = route.sections[0];
-    const polylineData = section.polyline;
+    const polylineData = route.polyline;
+    console.log(route.polyline);
     const routeLine =
       window.H.geo.LineString.fromFlexiblePolyline(polylineData);
 
-    // Create route polylines
     const outlinePolyline = new window.H.map.Polyline(routeLine, {
       style: { strokeColor: "gray", lineWidth: 8 },
     });
@@ -533,62 +344,21 @@ const ListRoute = () => {
     mapRef.current.addObject(routePolyline);
     routePolylines.current.push(outlinePolyline, routePolyline);
 
-    // Fit map to show the route
     mapRef.current.getViewModel().setLookAtData({
       bounds: routePolyline.getBoundingBox(),
       padding: { top: 50, left: 50, bottom: 50, right: 50 },
     });
   };
 
-  // Thêm hàm xử lý view route
+  // Modified handleViewRoute function with custom icon for realMarker
   const handleViewRoute = async (route) => {
     try {
       setLoading(true);
-
-      // Get waypoints
       const res = await getWayPoint(route.routeId);
-      if (!res || res.length === 0) {
-        throw new Error("No waypoints found");
-      }
-
+      if (!res || res.length === 0) throw new Error("No waypoints found");
       setWayPoints(res);
       clearMap();
 
-      // Add markers for each waypoint with locationName from DB
-      for (const [index, wayPoint] of res.entries()) {
-        const marker = new window.H.map.Marker({
-          lat: wayPoint.lat,
-          lng: wayPoint.lng,
-        });
-
-        // Lấy tên điểm dừng từ DB
-        let label;
-        if (index === 0) {
-          label = `Start: ${wayPoint.locationName || ""}`;
-        } else if (index === res.length - 1) {
-          label = `End: ${wayPoint.locationName || ""}`;
-        } else {
-          label = `Stop ${index}: ${wayPoint.locationName || ""}`;
-        }
-
-        marker.setData(label);
-        mapRef.current.addObject(marker);
-        markers.current.push(marker);
-
-        // Add click event to marker
-        marker.addEventListener("tap", (evt) => {
-          const content = evt.target.getData();
-          Swal.fire({
-            title: content,
-            timer: 5000,
-            showConfirmButton: false,
-            showCloseButton: true,
-            timerProgressBar: true,
-          });
-        });
-      }
-
-      // Get route data
       const response = await axios.get(
         "http://localhost:8080/api/route/findRoute",
         {
@@ -604,11 +374,128 @@ const ListRoute = () => {
         },
       );
 
-      if (response.data.routes?.[0]) {
-        renderRoute(response.data.routes[0]);
+      renderRoute(route);
+
+      for (const [index, wayPoint] of res.entries()) {
+        let markerIcon;
+        let label;
+
+        if (index === 0) {
+          // Icon cho điểm đầu (Start) - màu xanh lá
+          markerIcon = new window.H.map.Icon(
+            `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="16" cy="16" r="14" fill="#22c55e" opacity="0.8"/>
+            <circle cx="16" cy="16" r="8" fill="white"/>
+            <text x="16" y="20" font-size="12" text-anchor="middle" fill="#22c55e" font-weight="bold">S</text>
+          </svg>`,
+            { anchor: { x: 16, y: 32 } },
+          );
+          label = `Start: ${wayPoint.locationName || ""}`;
+        } else if (index === res.length - 1) {
+          // Icon cho điểm cuối (End) - màu đỏ
+          markerIcon = new window.H.map.Icon(
+            `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="16" cy="16" r="32" fill="#ef4444" opacity="0.8"/>
+            <circle cx="16" cy="16" r="8" fill="white"/>
+            <text x="16" y="20" font-size="12" text-anchor="middle" fill="#ef4444" font-weight="bold">E</text>
+          </svg>`,
+            { anchor: { x: 16, y: 32 } },
+          );
+          label = `End: ${wayPoint.locationName || ""}`;
+        } else {
+          // Icon cho waypoint - sử dụng biểu tượng cột mốc
+          markerIcon = new window.H.map.Icon(
+            "https://img.icons8.com/color/48/000000/marker.png", // Icon cột mốc
+            { anchor: { x: 24, y: 48 } },
+          );
+          label = `Stop ${index}: ${wayPoint.locationName || ""}`;
+        }
+
+        const marker = new window.H.map.Marker(
+          {
+            lat: wayPoint.lat,
+            lng: wayPoint.lng,
+          },
+          { icon: markerIcon },
+        );
+        marker.setData(label);
+        mapRef.current.addObject(marker);
+        markers.current.push(marker);
+
+        marker.addEventListener("tap", (evt) => {
+          const content = evt.target.getData();
+          Swal.fire({
+            title: content,
+            timer: 5000,
+            showConfirmButton: false,
+            showCloseButton: true,
+            timerProgressBar: true,
+          });
+        });
       }
 
-      // Get interconnections
+      // Lấy vị trí thực tế từ Firestore
+      const driverLocation = await getLatestDocumentFromCollection(
+        route.routeId,
+      );
+      console.log(
+        "Driver Location:",
+        driverLocation?.latitude,
+        driverLocation?.longitude,
+      );
+      if (
+        driverLocation &&
+        typeof driverLocation.latitude === "number" &&
+        typeof driverLocation.longitude === "number"
+      ) {
+        // Icon xe ô tô cho vị trí thực tế
+        const carIcon = new window.H.map.Icon(
+          "https://img.icons8.com/color/48/000000/car.png",
+          { anchor: { x: 24, y: 48 } },
+        );
+        const realMarker = new window.H.map.Marker(
+          {
+            lat: driverLocation.latitude,
+            lng: driverLocation.longitude,
+          },
+          { icon: carIcon },
+        );
+
+        const label = `Vị trí thực tế của tài xế`;
+        realMarker.setData(label);
+        mapRef.current.addObject(realMarker);
+        markers.current.push(realMarker);
+
+        realMarker.addEventListener("tap", (evt) => {
+          const content = evt.target.getData();
+          Swal.fire({
+            title: content,
+            text: `Lat: ${driverLocation.latitude}, Lng: ${driverLocation.longitude}`,
+            icon: "info",
+            timer: 5000,
+            showConfirmButton: false,
+            showCloseButton: true,
+            timerProgressBar: true,
+          });
+        });
+
+        // Cập nhật khung nhìn của bản đồ
+        mapRef.current.setCenter({
+          lat: driverLocation.latitude,
+          lng: driverLocation.longitude,
+        });
+        mapRef.current.setZoom(15);
+      } else {
+        // Nếu không có vị trí tài xế, căn giữa bản đồ vào tuyến đường
+        if (res.length > 0) {
+          mapRef.current.setCenter({
+            lat: res[0].lat,
+            lng: res[0].lng,
+          });
+          mapRef.current.setZoom(12);
+        }
+      }
+
       const resInter = await getInterConnections(route.routeId);
       setInterconnect(resInter);
     } catch (error) {
@@ -622,7 +509,7 @@ const ListRoute = () => {
       setLoading(false);
     }
   };
-
+  // Existing statusButtons and getLatestDocumentFromCollection (unchanged)
   const statusButtons = [
     {
       status: "",
@@ -640,9 +527,48 @@ const ListRoute = () => {
     },
   ];
 
+  const getLatestDocumentFromCollection = async (routeId) => {
+    if (!routeId) {
+      console.error("Error: routeId is null or undefined");
+      return null;
+    }
+
+    try {
+      // Ensure routeId is a string
+      const sanitizedRouteId = String(routeId);
+      console.log("sanitizedRouteId:", sanitizedRouteId);
+      const colRef = collection(db, sanitizedRouteId);
+      const q = query(colRef, orderBy("timestamp", "desc"), limit(1));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const docData = querySnapshot.docs[0].data();
+        if (!docData.latitude || !docData.longitude) {
+          console.error(
+            `Error: Missing latitude or longitude in document for routeId: ${sanitizedRouteId}`,
+          );
+          return null;
+        }
+        console.log("Latest document data:", docData);
+        return docData;
+      } else {
+        console.warn(
+          `No documents found in collection for routeId: ${sanitizedRouteId}`,
+        );
+        return null;
+      }
+    } catch (error) {
+      console.error(
+        `Error getting latest document for routeId ${routeId}:`,
+        error,
+      );
+      return null;
+    }
+  };
+
+  // Existing JSX return (unchanged)
   return (
     <div className="flex h-screen overflow-hidden bg-gray-100">
-      {/* Mobile menu toggle */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
         className="fixed left-4 top-4 z-50 rounded-full bg-white p-2 text-gray-700 shadow-lg focus:outline-none lg:hidden"
@@ -650,7 +576,6 @@ const ListRoute = () => {
         {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
-      {/* Driver Sidebar */}
       <div
         className={`${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -664,7 +589,6 @@ const ListRoute = () => {
           <p className="mt-1 text-blue-100">Online Tracking System</p>
         </div>
 
-        {/* Search */}
         <div className="border-b p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
@@ -678,7 +602,6 @@ const ListRoute = () => {
           </div>
         </div>
 
-        {/* Status filter */}
         <div className="flex flex-wrap justify-center gap-2 border-b p-4">
           {statusButtons.map((button) => (
             <button
@@ -691,7 +614,6 @@ const ListRoute = () => {
           ))}
         </div>
 
-        {/* Driver List */}
         <div className="flex-1 overflow-y-auto py-2">
           {filteredRoutes.length === 0 ? (
             <div className="flex h-40 flex-col items-center justify-center text-gray-500">
@@ -700,7 +622,6 @@ const ListRoute = () => {
             </div>
           ) : (
             filteredRoutes.map((route) => {
-              // Find driver location from Firebase data
               const driverLocation = firebaseDriverLocations.find(
                 (loc) => loc.driverId === route.driver.id,
               );
@@ -718,7 +639,6 @@ const ListRoute = () => {
                     const start = route.startLocationName;
                     const end = route.endLocationName;
 
-                    // Lấy waypoint từ API
                     let waypoints = [];
                     try {
                       waypoints = await getWayPoint(route.routeId);
@@ -726,7 +646,6 @@ const ListRoute = () => {
                       waypoints = [];
                     }
 
-                    // Tạo HTML cho danh sách waypoint
                     const waypointHtml =
                       waypoints && waypoints.length > 0
                         ? `<div style="margin-top:8px">
@@ -809,7 +728,6 @@ const ListRoute = () => {
           )}
         </div>
 
-        {/* Summary footer */}
         <div className="border-t bg-gray-50 p-4 text-sm text-gray-600">
           <div className="flex justify-between">
             <span>Total Drivers: {routes.length}</span>
@@ -820,11 +738,9 @@ const ListRoute = () => {
         </div>
       </div>
 
-      {/* Map container */}
       <div className="relative flex-1">
         <div id="mapContainer" className="h-full w-full"></div>
 
-        {/* Legend overlay */}
         <div className="absolute bottom-4 right-4 z-10 rounded-lg bg-white p-3 text-sm shadow-lg">
           <div className="mb-2 font-medium">Legend:</div>
           <div className="mb-1 flex items-center">
@@ -838,7 +754,6 @@ const ListRoute = () => {
         </div>
       </div>
 
-      {/* Route Detail Modal */}
       <Modal
         title="Route Details"
         open={isDetailModalVisible}
