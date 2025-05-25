@@ -650,3 +650,13 @@ export const deleteShipmentItem = async (id) => {
     throw error;
   }
 };
+
+export const deleteNotification = async (id) => {
+  try {
+    const response = await api.delete(`notifications/delete/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting notification:", error.response?.data || error.message);
+    throw error;
+  }
+};

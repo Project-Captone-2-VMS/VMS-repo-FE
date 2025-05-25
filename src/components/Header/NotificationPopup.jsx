@@ -1,15 +1,19 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Trash2, Check } from "lucide-react";
+import { X, Trash2, Check, MessageSquare, AlertTriangle, Info } from "lucide-react";
 import Button from "../Buttons/Button";
-// import { getNotificationIcon } from "../Notifications/NotificationItem";
 
 const NotificationPopup = ({
   selectedNotification,
   setSelectedNotification,
   notifications,
   setNotifications,
+  onMarkAsRead,
 }) => {
-  const handleClosePopUp = () => setSelectedNotification(null);
+  const handleClosePopUp = () => {
+    if (typeof setSelectedNotification === 'function') {
+      setSelectedNotification(null);
+    }
+  };
 
   const getNotificationIcon = (type) => {
     switch (type) {
@@ -38,21 +42,21 @@ const NotificationPopup = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
-          onClick={handleClosePopUp}
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          onClick={setSelectedNotification}
         >
           <motion.div
-            initial={{ scale: 0.9, y: 20 }}
+            initial={{ scale: 0.95, y: 40 }}
             animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.9, y: 20 }}
+            exit={{ scale: 0.95, y: 100 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-1/3 overflow-hidden rounded-xl bg-white shadow-2xl"
+            className="max-w-md w-full rounded-2xl bg-white shadow-2xl border border-blue-200 mx-auto my-auto"
           >
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 text-white">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 text-white rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {getNotificationIcon(selectedNotification.notification?.type)}
-                  <h3 className="text-xl font-semibold">
+                  <h3 className="text-lg font-semibold">
                     {selectedNotification.notification.title || "Notification"}
                   </h3>
                 </div>
@@ -66,7 +70,7 @@ const NotificationPopup = ({
             </div>
             <div className="p-6">
               <div className="mb-4 rounded-lg bg-blue-50 p-4">
-                <p className="text-gray-700">
+                <p className="text-gray-700 text-base">
                   {selectedNotification.notification.content}
                 </p>
               </div>
@@ -83,7 +87,10 @@ const NotificationPopup = ({
                 >
                   <Trash2 className="h-4 w-4" /> Delete
                 </Button>
-                <Button className="bg-blue-600 text-white">
+                <Button
+                  onClick={onMarkAsRead}
+                  className="bg-blue-600 text-white"
+                >
                   <Check className="h-4 w-4" /> Mark as Read
                 </Button>
               </div>

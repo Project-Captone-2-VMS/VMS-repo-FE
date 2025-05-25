@@ -78,6 +78,25 @@ const Headers = () => {
   useEffect(() => {
     if (!username) return;
 
+    // Hàm chớp đỏ màn hình
+    const flashRedScreen = () => {
+      const flashDiv = document.createElement("div");
+      flashDiv.style.position = "fixed";
+      flashDiv.style.top = 0;
+      flashDiv.style.left = 0;
+      flashDiv.style.width = "100vw";
+      flashDiv.style.height = "100vh";
+      flashDiv.style.backgroundColor = "rgba(255,0,0,0.4)";
+      flashDiv.style.zIndex = 9999;
+      flashDiv.style.pointerEvents = "none";
+      flashDiv.style.transition = "opacity 0.3s";
+      document.body.appendChild(flashDiv);
+      setTimeout(() => {
+        flashDiv.style.opacity = 0;
+        setTimeout(() => document.body.removeChild(flashDiv), 300);
+      }, 200);
+    };
+
     const getNotice = async () => {
       const res = await getNoti(username);
       if (res) {
@@ -103,6 +122,8 @@ const Headers = () => {
           } else if (notification.type === "USER") {
             toast.success("You have a new message!", { duration: 10000 });
           } else if (notification.type === "ALERT") {
+            // Chớp đỏ màn hình khi nhận ALERT
+            flashRedScreen();
             toast.success(
               `Warning: ${notification.title || "You have a new message!"}`,
               {
