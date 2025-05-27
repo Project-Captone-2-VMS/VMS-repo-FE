@@ -201,6 +201,13 @@ export default function RealtimeTrackingDashboard() {
 
   const handleViewDetailsInMap = async (id) => {
     try {
+      // Tìm route đã chọn từ state routes
+      const selectedRoute = routes.find((r) => r.routeId === id);
+      if (!selectedRoute || !selectedRoute.polyline) {
+        setError("No polyline found for this route.");
+        return;
+      }
+
       const res = await getWayPoint(id);
       setMapWayPoints(res);
 
@@ -209,6 +216,7 @@ export default function RealtimeTrackingDashboard() {
       setLoading(true);
       clearMap();
 
+      // Vẽ các marker waypoint như cũ
       for (const [index, wayPoint] of res.entries()) {
         const marker = new window.H.map.Marker({
           lat: wayPoint.lat,
@@ -216,7 +224,6 @@ export default function RealtimeTrackingDashboard() {
         });
 
         const address = await convertGeocode(wayPoint.lat, wayPoint.lng);
-        console.log("address", address);
         let label;
 
         if (address) {
@@ -247,27 +254,8 @@ export default function RealtimeTrackingDashboard() {
         });
       }
 
-      const response = await axios.get(
-        "http://localhost:8080/api/route/findRoute",
-        {
-          params: {
-            originLat: res[0].lat,
-            originLng: res[0].lng,
-            destinationLat: res[res.length - 1].lat,
-            destinationLng: res[res.length - 1].lng,
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      if (response.data.routes?.length > 0) {
-        const route = response.data.routes[0];
-        renderRoute(route);
-      } else {
-        setError("No routes found.");
-      }
+      // Sử dụng polyline đã lưu trong route thay vì gọi lại API
+      renderRouteByPolyline(selectedRoute.polyline, res);
     } catch (error) {
       console.error("Error fetching route:", error);
     } finally {
@@ -275,22 +263,10 @@ export default function RealtimeTrackingDashboard() {
     }
   };
 
-  const clearMap = () => {
-    routePolylines.current.forEach((polyline) => {
-      mapRef.current.removeObject(polyline);
-    });
-    routePolylines.current = [];
-    markers.current.forEach((marker) => {
-      mapRef.current.removeObject(marker);
-    });
-    markers.current = [];
-  };
-
-  const renderRoute = (route) => {
-    const section = route.sections[0];
-    const polylineData = section.polyline;
-    const routeLine =
-      window.H.geo.LineString.fromFlexiblePolyline(polylineData);
+  // Hàm render route theo polyline đã chọn
+  const renderRouteByPolyline = (polyline, wayPoints) => {
+    if (!polyline) return;
+    const routeLine = window.H.geo.LineString.fromFlexiblePolyline(polyline);
 
     const outlinePolyline = new window.H.map.Polyline(routeLine, {
       style: { strokeColor: "gray", lineWidth: 8 },
@@ -307,23 +283,26 @@ export default function RealtimeTrackingDashboard() {
       .getViewModel()
       .setLookAtData({ bounds: routePolyline.getBoundingBox() });
 
-    const originMarker = new window.H.map.Marker({
-      lat: routeWayPoints[0].lat,
-      lng: routeWayPoints[0].lng,
-    });
-    const destinationMarker = new window.H.map.Marker({
-      lat: routeWayPoints[routeWayPoints.length - 1].lat,
-      lng: routeWayPoints[routeWayPoints.length - 1].lng,
-    });
+    // Marker cho điểm đầu/cuối (nếu muốn)
+    if (wayPoints && wayPoints.length > 0) {
+      const originMarker = new window.H.map.Marker({
+        lat: wayPoints[0].lat,
+        lng: wayPoints[0].lng,
+      });
+      const destinationMarker = new window.H.map.Marker({
+        lat: wayPoints[wayPoints.length - 1].lat,
+        lng: wayPoints[wayPoints.length - 1].lng,
+      });
 
-    mapRef.current.addObject(originMarker);
-    mapRef.current.addObject(destinationMarker);
-    markers.current.push(originMarker, destinationMarker);
+      mapRef.current.addObject(originMarker);
+      mapRef.current.addObject(destinationMarker);
+      markers.current.push(originMarker, destinationMarker);
+    }
   };
 
-  function convertM(distance) {
+  const convertM = (distance) => {
     return `${(distance / 1000).toFixed(1)} km`;
-  }
+  };
 
   useEffect(() => {
     const fetchData = async () => {

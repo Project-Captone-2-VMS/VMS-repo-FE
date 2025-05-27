@@ -341,8 +341,8 @@ const Route = () => {
           const section = route.sections[0];
           const polylineData = section.polyline;
           const routeLine = H.geo.LineString.fromFlexiblePolyline(polylineData);
-          const strokeColor =
-            index === minIndex ? "red" : index === 0 ? "blue" : "green";
+            const strokeColor =
+            index === minIndex ? "#4ade80" : "#64696f"; // xanh nhạt cho tuyến được chọn, xám nhạt cho tuyến không chọn
           const routePolyline = new H.map.Polyline(routeLine, {
             style: { strokeColor, lineWidth: 5 },
           });
@@ -512,11 +512,7 @@ const Route = () => {
       routePolylines.current.forEach((polyline, index) => {
         polyline.setStyle({
           strokeColor:
-            index.toString() === selectedRouteIndex.toString()
-              ? "red"
-              : index === 0
-                ? "blue"
-                : "green",
+            index === selectedRouteIndex ? "#4ade80" : "#81848a", // xanh nhạt cho được chọn, xám cho không chọn
           lineWidth: 5,
         });
       });

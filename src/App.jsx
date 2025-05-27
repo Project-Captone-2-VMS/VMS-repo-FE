@@ -17,7 +17,6 @@ import OverviewTab from "./pages/VehicleManegement/sub-pages/OverviewTab";
 import VehiclesTab from "./pages/VehicleManegement/sub-pages/VehiclesTab";
 import WarehouseManagement from "./pages/WarehouseManagement.jsx/WarehouseManagement";
 import WarehouseProduct from "./pages/WarehouseManagement.jsx/WarehouseProduct";
-import Analytics from "./pages/AnalyticsManagement/Analytics";
 import ProfileInformation from "./pages/Profileinformation";
 import IndexRoute from "./pages/Route/IndexRoute";
 import OverviewRoute from "./pages/Route/sub-Route/OverviewRoute";
@@ -35,17 +34,11 @@ import { Toaster } from "react-hot-toast";
 import ChangePassWord from "./pages/ChangePassword/ChangePassWord";
 import Schedule from "./pages/Schedule"; // Add this import at the top
 
-import ForgetPassword from "./pages/ChangePassword/ForgetPassword";
-
 function App() {
   const router = createBrowserRouter([
     {
       path: "/",
       element: <Login />,
-    },
-    {
-      path: "/forgetPassword",
-      element: <ForgetPassword />,
     },
     {
       element: <AuthLayout />,
@@ -153,10 +146,6 @@ function App() {
             {
               path: "warehouse/:warehouseId/invoices",
               element: <InvoicePage />,
-            },
-            {
-              path: "Analytics",
-              element: <Analytics />,
             },
 
             {

@@ -163,6 +163,7 @@ const Dashboard = () => {
     completedRoutes: 0,
     activeRoutes: [],
     vehicleStatus: { active: 0, inactive: 0 },
+    driverStatus: { active: 0, inactive: 0 }, 
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -177,6 +178,7 @@ const Dashboard = () => {
           completedRoutes,
           activeRoutes,
           vehicleStats,
+          driverStats, 
         ] = await Promise.all([
           dashboardService.getTotalVehicles(),
           dashboardService.getTotalDrivers(),
@@ -184,6 +186,7 @@ const Dashboard = () => {
           dashboardService.getCompletedRoutes(),
           dashboardService.getActiveRoutes(),
           dashboardService.getVehicleStats(),
+          dashboardService.getDriverStats(), // Thêm dòng này
         ]);
 
         setDashboardData({
@@ -193,6 +196,7 @@ const Dashboard = () => {
           completedRoutes,
           activeRoutes,
           vehicleStatus: vehicleStats,
+          driverStatus: driverStats, // Thêm dòng này
         });
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -214,6 +218,11 @@ const Dashboard = () => {
   const vehicleStatusData = [
     { name: 'Active', value: dashboardData.vehicleStatus.active, color: '#10B981' },
     { name: 'Inactive', value: dashboardData.vehicleStatus.inactive, color: '#EF4444' },
+  ];
+
+  const driverStatusData = [
+    { name: 'Active', value: dashboardData.driverStatus.active, color: '#10B981' },
+    { name: 'Inactive', value: dashboardData.driverStatus.inactive, color: '#EF4444' },
   ];
 
   const RADIAN = Math.PI / 180;
@@ -298,7 +307,7 @@ const Dashboard = () => {
                     dataKey="value"
                   >
                     {vehicleStatusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                      <Cell key={`cell-vehicle-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
                 </PieChart>
@@ -308,7 +317,7 @@ const Dashboard = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={vehicleStatusData}
+                    data={driverStatusData} // Sửa lại thành driverStatusData
                     cx="50%"
                     cy="50%"
                     labelLine={false}
@@ -317,8 +326,8 @@ const Dashboard = () => {
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {vehicleStatusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    {driverStatusData.map((entry, index) => (
+                      <Cell key={`cell-driver-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
                 </PieChart>

@@ -111,9 +111,7 @@ const MainHeader = () => {
     const getNotice = async () => {
       const res = await getNoti(username);
       if (res) {
-        const sortedNotifications = [...res].sort(
-          (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
-        );
+const sortedNotifications = res.slice().reverse();  
         setNotifications(sortedNotifications);
         setNotificationCount(sortedNotifications.length);
         setHasNewNotification(true);

@@ -30,7 +30,6 @@ const Sidebar = ({ isOpen, setIsOpen, role }) => {
     { path: "/driver", icon: Users, label: "Driver" },
     { path: "/routeDetail", icon: Users, label: "Route" },
     { path: "/warehouse", icon: Warehouse, label: "Warehouse" },
-    { path: "/analytics", icon: ChartColumnBig, label: "Analytics" },
     { path: "/indexNotification", icon: BellDot, label: "Notification" },
     { path: "/route", icon: Route, label: "Route" },
     { path: "/shipment", icon: FileText, label: "Shipment" },

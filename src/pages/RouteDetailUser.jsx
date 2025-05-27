@@ -152,6 +152,15 @@ const RouteDetailUser = () => {
 
   const handleViewDetailsInMap = async (id) => {
     try {
+      // Tìm route đã chọn từ state routes
+      const selectedRoute = routes.find((r) => r.routeId === id);
+      if (!selectedRoute || !selectedRoute.polyline) {
+        setLoading(false);
+        setIsDetailModalVisible(false);
+        Swal.fire("No polyline found for this route.");
+        return;
+      }
+
       const res = await getWayPoint(id);
       setMapWayPoints(res);
 
@@ -160,29 +169,24 @@ const RouteDetailUser = () => {
       setLoading(true);
       clearMap();
 
+      // Vẽ các marker waypoint như cũ
       for (const [index, wayPoint] of res.entries()) {
         const marker = new window.H.map.Marker({
           lat: wayPoint.lat,
           lng: wayPoint.lng,
         });
-    
-        let label = `Waypoint ${index}: (${wayPoint.lat.toFixed(
-          4,
-        )}, ${wayPoint.lng.toFixed(4)})`;
+
+        let label = `Waypoint ${index}: (${wayPoint.lat.toFixed(4)}, ${wayPoint.lng.toFixed(4)})`;
         if (index === 0) {
-          label = `Start: (${wayPoint.lat.toFixed(4)}, ${wayPoint.lng.toFixed(
-            4,
-          )})`;
+          label = `Start: (${wayPoint.lat.toFixed(4)}, ${wayPoint.lng.toFixed(4)})`;
         } else if (index === res.length - 1) {
-          label = `End: (${wayPoint.lat.toFixed(4)}, ${wayPoint.lng.toFixed(
-            4,
-          )})`;
+          label = `End: (${wayPoint.lat.toFixed(4)}, ${wayPoint.lng.toFixed(4)})`;
         }
-    
+
         marker.setData(label);
         mapRef.current.addObject(marker);
         markers.current.push(marker);
-    
+
         marker.addEventListener("tap", function (e) {
           const content = marker.getData();
           Swal.fire({
@@ -195,31 +199,50 @@ const RouteDetailUser = () => {
         });
       }
 
-      const response = await axios.get(
-        "http://localhost:8080/api/route/findRoute",
-        {
-          params: {
-            originLat: res[0].lat,
-            originLng: res[0].lng,
-            destinationLat: res[res.length - 1].lat,
-            destinationLng: res[res.length - 1].lng,
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      // Sử dụng polyline đã lưu trong route thay vì gọi lại API
+      renderRouteByPolyline(selectedRoute.polyline, res);
 
-      if (response.data.routes?.length > 0) {
-        const route = response.data.routes[0];
-        renderRoute(route);
-      } else {
-        setError("No routes found.");
-      }
     } catch (error) {
       console.error("Error fetching route:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Hàm render route theo polyline đã chọn
+  const renderRouteByPolyline = (polyline, wayPoints) => {
+    if (!polyline) return;
+    const routeLine = window.H.geo.LineString.fromFlexiblePolyline(polyline);
+
+    const outlinePolyline = new window.H.map.Polyline(routeLine, {
+      style: { strokeColor: "gray", lineWidth: 8 },
+    });
+    const routePolyline = new window.H.map.Polyline(routeLine, {
+      style: { strokeColor: "rgba(173, 216, 230, 0.8)", lineWidth: 5 },
+    });
+
+    mapRef.current.addObject(outlinePolyline);
+    mapRef.current.addObject(routePolyline);
+    routePolylines.current.push(outlinePolyline, routePolyline);
+
+    mapRef.current
+      .getViewModel()
+      .setLookAtData({ bounds: routePolyline.getBoundingBox() });
+
+    // Marker cho điểm đầu/cuối (nếu muốn)
+    if (wayPoints && wayPoints.length > 0) {
+      const originMarker = new window.H.map.Marker({
+        lat: wayPoints[0].lat,
+        lng: wayPoints[0].lng,
+      });
+      const destinationMarker = new window.H.map.Marker({
+        lat: wayPoints[wayPoints.length - 1].lat,
+        lng: wayPoints[wayPoints.length - 1].lng,
+      });
+
+      mapRef.current.addObject(originMarker);
+      mapRef.current.addObject(destinationMarker);
+      markers.current.push(originMarker, destinationMarker);
     }
   };
 
